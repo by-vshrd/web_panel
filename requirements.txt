@@ -4,3 +4,4 @@ pillow
 requests
 whitenoise
 urllib3
+gunicorn
