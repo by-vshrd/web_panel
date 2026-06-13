@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Админ‑панель{% endblock %}
+{% block content %}
+<h2>Статистика</h2>
+<div class="card">
+    <p>Всего пользователей: {{ total_users }}</p>
+    <p>Всего профилей: {{ total_profiles }}</p>
+    <p>Активных подписок: {{ active_profiles }}</p>
+    <p>Истекают в ближайшие 7 дней: {{ expire_soon }}</p>
+    <a href="{{ panel_url }}" target="_blank" class="btn btn-outline">Открыть панель 3X‑UI</a>
+</div>
+
+<h2>Пользователи</h2>
+{% for u in users %}
+<div class="card">
+    <strong>{{ u.username }}</strong> ({{ u.email }})
+    <div style="float:right;">
+        <a href="{% url 'manage_user' u.id %}" class="btn">Управление</a>
+    </div>
+    <ul>
+        {% for p in u.profiles.all %}
+        <li>
+            {{ p.get_protocol_display }} –
+            {% if p.is_subscription_active %}Активна{% else %}Истекла{% endif %}
+            (до {{ p.subscription_expiry|date:"d.m.Y" }})
+        </li>
+        {% empty %}
+        <li>Нет профилей</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endfor %}
+{% endblock %}

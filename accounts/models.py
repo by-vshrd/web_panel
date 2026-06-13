@@ -16,6 +16,7 @@ class Profile(models.Model):
     vpn_inbound_id = models.IntegerField()
     vpn_sub_id = models.CharField(max_length=255, blank=True, null=True)
     subscription_expiry = models.DateTimeField(null=True, blank=True)
+    total_gb = models.IntegerField(default=0)          # <-- новое поле (0 = безлимит)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -31,3 +32,18 @@ class Profile(models.Model):
             return -1
         delta = self.subscription_expiry - now()
         return max(0, delta.days)
+
+
+class AdminSettings(models.Model):
+    """Синглтон‑настройки по умолчанию (одна запись)."""
+    default_days = models.IntegerField(default=30)
+    default_traffic_gb = models.IntegerField(default=0)  # 0 – безлимит
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj

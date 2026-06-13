@@ -11,4 +11,7 @@ urlpatterns = [
     path('qr/<str:protocol>/', views.qr_code, name='qr_code'),
     path('link/<str:protocol>/', views.subscription_link, name='subscription_link'),
     path('server-status/', views.server_status, name='server_status'),
+    path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('manage-user/<int:user_id>/', views.manage_user, name='manage_user'),
+    path('admin-settings/', views.admin_settings, name='admin_settings'),
 ]

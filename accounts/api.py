@@ -15,47 +15,46 @@ class XUIClient:
         self.api_prefix = settings.XUI_API_PREFIX.rstrip('/')
         self.session = requests.Session()
         self.session.verify = False
+        self.csrf_token = None
         self._login()
 
     def _login(self):
-            # 1. GET страницы входа
-            resp = self.session.get(f'{self.base}{self.login_page}')
-            if resp.status_code != 200:
-                raise Exception(f'Не удалось загрузить страницу входа (статус {resp.status_code})')
+        # 1. GET страницы входа (получаем куку и CSRF-токен)
+        resp = self.session.get(f'{self.base}{self.login_page}')
+        if resp.status_code != 200:
+            raise Exception(f'Не удалось загрузить страницу входа (статус {resp.status_code})')
 
-            # Извлекаем CSRF-токен
-            match = re.search(r'<meta\s+name="csrf-token"\s+content="([^"]+)"', resp.text)
-            if not match:
-                match = re.search(r'<input\s+type="hidden"\s+name="_csrf"\s+value="([^"]+)"', resp.text)
-            csrf_token = match.group(1) if match else None
-            self.csrf_token = csrf_token  # <-- сохраняем для последующих запросов
+        match = re.search(r'<meta\s+name="csrf-token"\s+content="([^"]+)"', resp.text)
+        if not match:
+            match = re.search(r'<input\s+type="hidden"\s+name="_csrf"\s+value="([^"]+)"', resp.text)
+        self.csrf_token = match.group(1) if match else None
 
-            # 2. POST-запрос на вход
-            data = {'username': settings.XUI_USERNAME, 'password': settings.XUI_PASSWORD}
-            headers = {}
-            if csrf_token:
-                data['_csrf'] = csrf_token
-                headers['X-CSRF-TOKEN'] = csrf_token
-                headers['X-XSRF-TOKEN'] = csrf_token
-            headers['Referer'] = f'{self.base}{self.login_page}'
+        # 2. POST-запрос на вход
+        data = {'username': settings.XUI_USERNAME, 'password': settings.XUI_PASSWORD}
+        headers = {}
+        if self.csrf_token:
+            data['_csrf'] = self.csrf_token
+            headers['X-CSRF-TOKEN'] = self.csrf_token
+            headers['X-XSRF-TOKEN'] = self.csrf_token
+        headers['Referer'] = f'{self.base}{self.login_page}'
 
-            resp = self.session.post(
-                f'{self.base}{self.login_action}',
-                data=data,
-                headers=headers
-            )
-            if resp.status_code != 200:
-                raise Exception(f'Ошибка входа (статус {resp.status_code}): {resp.text[:200]}')
+        resp = self.session.post(
+            f'{self.base}{self.login_action}',
+            data=data,
+            headers=headers
+        )
+        if resp.status_code != 200:
+            raise Exception(f'Ошибка входа (статус {resp.status_code}): {resp.text[:200]}')
 
-            try:
-                json_resp = resp.json()
-                if isinstance(json_resp, str):
-                    json_resp = json.loads(json_resp)
-                if not json_resp.get('success'):
-                    raise Exception(f'Ошибка входа: {json_resp.get("msg")}')
-            except ValueError:
-                if 'dashboard' not in resp.text.lower() and 'inbounds' not in resp.text.lower():
-                    raise Exception('Не удалось войти в панель (неизвестный ответ)')
+        try:
+            json_resp = resp.json()
+            if isinstance(json_resp, str):
+                json_resp = json.loads(json_resp)
+            if not json_resp.get('success'):
+                raise Exception(f'Ошибка входа: {json_resp.get("msg")}')
+        except ValueError:
+            if 'dashboard' not in resp.text.lower() and 'inbounds' not in resp.text.lower():
+                raise Exception('Не удалось войти в панель (неизвестный ответ)')
 
     def _add_csrf_header(self, headers=None):
         if headers is None:

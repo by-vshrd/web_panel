@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Управление пользователем {{ user_obj.username }}{% endblock %}
+{% block content %}
+<h2>{{ user_obj.username }}</h2>
+<div class="card">
+    <p><strong>Email:</strong> {{ user_obj.email }}</p>
+</div>
+
+{% for profile in profiles %}
+<div class="card">
+    <h3>{{ profile.get_protocol_display }}</h3>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="profile_id" value="{{ profile.id }}">
+        <label>Дата окончания (пусто = безлимит):</label>
+        <input type="date" name="expiry" value="{{ profile.subscription_expiry|date:'Y-m-d' }}">
+        <label>Активна:</label>
+        <input type="checkbox" name="enable" {% if profile.is_subscription_active %}checked{% endif %}>
+        <label>Лимит трафика (ГБ, 0 = безлимит):</label>
+        <input type="number" name="total_gb" value="{{ profile.total_gb }}" min="0">
+        <button type="submit" class="btn">Сохранить</button>
+    </form>
+    <p style="color: var(--muted); font-size:0.85rem;">Изменения сохраняются локально и не отправляются в панель 3X‑UI.</p>
+</div>
+{% endfor %}
+{% endblock %}
