@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VPN Сервис{% endblock %}</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-heading: #f0f6fc;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --danger: #f85149;
+            --success: #3fb950;
+            --muted: #8b949e;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+        }
+        .navbar {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 1.5rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .navbar .logo {
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--text-heading);
+            text-decoration: none;
+        }
+        .navbar nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .navbar nav a {
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .navbar nav a:hover { color: var(--accent); }
+        .btn {
+            display: inline-block;
+            background: var(--accent);
+            color: #ffffff !important;
+            padding: 0.55rem 1.4rem;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text) !important;
+        }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent) !important; background: transparent; }
+        .container {
+            max-width: 720px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            flex: 1;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2, .card h1 {
+            color: var(--text-heading);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        .stat {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-heading);
+            line-height: 1.2;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text);
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        td {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        td:last-child { text-align: right; }
+        label { display: block; margin-bottom: 0.3rem; color: var(--text); font-weight: 500; }
+        input[type="text"], input[type="email"], input[type="password"] {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            color: var(--text);
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2);
+            outline: none;
+        }
+        .errorlist { color: var(--danger); list-style: none; margin: 0.3rem 0; font-size: 0.85rem; }
+        .footer-note {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            opacity: 0.6;
+            padding: 1rem 0;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text);
+            transition: border-color 0.3s, background 0.3s;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: gray;
+            box-shadow: 0 0 8px currentColor;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.online { background: var(--success); }
+        .status-dot.offline { background: var(--danger); }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="/" class="logo">🔒 VPN</a>
+        <nav>
+            {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}">Кабинет</a>
+                <a href="{% url 'logout' %}">Выйти</a>
+            {% else %}
+                <a href="{% url 'login' %}">Войти</a>
+                <a href="{% url 'signup' %}" class="btn">Регистрация</a>
+            {% endif %}
+        </nav>
+    </div>
+    <div class="container">
+        {% block content %}{% endblock %}
+        <div class="footer-note">BETA-build v0.5 by V.</div>
+    </div>
+</body>
+</html>

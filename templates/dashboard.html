@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Личный кабинет{% endblock %}
+{% block content %}
+<h2 style="color: var(--text-heading); margin-bottom: 1rem;">Добро пожаловать, {{ user.username }}!</h2>
+
+{% if available_protocols %}
+<div class="card" style="text-align: center;">
+    <h2>Создать VPN‑подписку</h2>
+    <p style="color: var(--muted); margin-bottom: 1rem;">Вы можете создать по одному профилю каждого протокола.</p>
+    {% for proto in available_protocols %}
+        <form method="post" action="{% url 'create_profile' %}" style="display: inline-block; margin: 0.3rem;">
+            {% csrf_token %}
+            <input type="hidden" name="protocol" value="{{ proto }}">
+            <button type="submit" class="btn">
+                {% if proto == 'hysteria' %}Создать Hysteria2{% else %}Создать VLESS{% endif %}
+            </button>
+        </form>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% for profile in profiles %}
+<div class="card">
+    <div class="stat-label">Протокол: {{ profile.get_protocol_display }}</div>
+
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.5rem;">
+        <span class="stat" style="font-size: 1.2rem; {% if profile.is_subscription_active %}color: var(--success);{% else %}color: var(--danger);{% endif %}">
+            {% if profile.is_subscription_active %}Активна{% else %}Истекла{% endif %}
+        </span>
+        <span style="font-size: 1rem; color: var(--text-heading);">
+            {% with days=profile.days_left %}
+                {% if days == -1 %}Безлимит{% else %}{{ days }} дн.{% endif %}
+            {% endwith %}
+        </span>
+    </div>
+
+    <div style="margin-top: 0.8rem;">
+        <div class="stat-label">Дата окончания</div>
+        <div style="font-size: 1.1rem; color: var(--text);">
+            {% if profile.subscription_expiry is None %}Бессрочно{% else %}{{ profile.subscription_expiry|date:"d.m.Y" }}{% endif %}
+        </div>
+    </div>
+
+    <div style="margin-top: 0.8rem;">
+        <div class="stat-label">UUID / Email</div>
+        <div style="color: var(--text); word-break: break-all; font-family: monospace;">{{ profile.vpn_uuid }}</div>
+        <div style="color: var(--muted); font-size:0.9rem;">{{ profile.vpn_email }}</div>
+    </div>
+
+    {% if profile.traffic %}
+    <div style="margin-top: 0.8rem;">
+        <div class="stat-label">Трафик</div>
+        <table>
+            <tr><td>▲ Отправлено</td><td>{{ profile.traffic.upload|filesizeformat }}</td></tr>
+            <tr><td>▼ Получено</td><td>{{ profile.traffic.download|filesizeformat }}</td></tr>
+            <tr>
+                <td>Лимит</td>
+                <td>{% if profile.traffic.total %} {{ profile.traffic.total }} ГБ {% else %} Безлимит {% endif %}</td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 1rem;">
+        <a href="{% url 'qr_code' protocol=profile.protocol %}" class="btn" style="margin-right: 0.5rem;">📱 QR‑код</a>
+        <a href="{% url 'subscription_link' protocol=profile.protocol %}" class="btn btn-outline" target="_blank">🔗 Ссылка</a>
+    </div>
+</div>
+{% empty %}
+    {% if not available_protocols %}
+    <div class="card" style="text-align: center;">
+        <p style="color: var(--muted);">У вас пока нет ни одного профиля. Но все протоколы недоступны — обратитесь к администратору.</p>
+    </div>
+    {% endif %}
+{% endfor %}
+{% endblock %}
