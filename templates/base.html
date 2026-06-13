@@ -180,7 +180,7 @@
                 {% if user.is_staff %}
                     <a href="{% url 'admin_dashboard' %}">Админка</a>
                     <a href="{% url 'admin_settings' %}">Настройки</a>
-                    <a href="{{ settings.XUI_API_URL }}" target="_blank">3X-UI</a>
+                    <a href="{{ XUI_API_URL }}" target="_blank">3X-UI</a>
                 {% endif %}
                 <a href="{% url 'logout' %}">Выйти</a>
             {% else %}

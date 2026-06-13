@@ -35,12 +35,12 @@ TEMPLATES = [
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'django.template.context_processors.settings',   # даёт {{ settings }} в шаблонах
-            ],
+'context_processors': [
+    'django.template.context_processors.request',
+    'django.contrib.auth.context_processors.auth',
+    'django.contrib.messages.context_processors.messages',
+    'vpn_site.context_processors.extra_settings',   # <-- только эта кастомная строка
+],
         },
     },
 ]
