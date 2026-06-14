@@ -12,10 +12,13 @@ class Command(BaseCommand):
     help = 'Парсит виджет последних донатов Donation Alerts и активирует подписки по кодам'
 
     def handle(self, *args, **options):
+        # Укажите ваш никнейм на Donation Alerts (тот, что в ссылке https://www.donationalerts.com/r/...)
+        streamer = 'Vashardi'   # <-- замените на ваш реальный никнейм
         widget_url = (
-            'https://www.donationalerts.com/widget/lastdonations'
-            '?alert_type=1,4,6,8,7,10,9,3,2,5,11,12,13,14,15,16,17,19,20,27,28,29,30,31,32,33,34,35,36'
-            '&limit=100'
+            f'https://www.donationalerts.com/widget/lastdonations'
+            f'?streamer={streamer}'
+            f'&alert_type=1,4,6,8,7,10,9,3,2,5,11,12,13,14,15,16,17,19,20,27,28,29,30,31,32,33,34,35,36'
+            f'&limit=100'
         )
 
         try:
@@ -27,60 +30,38 @@ class Command(BaseCommand):
 
         html_content = resp.text
 
-        # Ищем все блоки с донатами (обычно <div class="donation"> или <li>)
-        # Используем регулярное выражение, чтобы найти блоки с суммой и сообщением
-        donation_blocks = re.findall(
-            r'<div[^>]*class="[^"]*donation[^"]*"[^>]*>(.*?)</div>',
-            html_content,
-            re.DOTALL | re.IGNORECASE
+        # Ищем все вхождения сообщений и сумм (универсальный подход)
+        # Паттерн: "отправил 200 RUB" или "$5.00"
+        # Ищем строки вида "никнейм отправил X валюту" и рядом сообщение
+        donation_pattern = re.compile(
+            r'(?:<[^>]*>)?\s*(?P<username>[\w]+)\s*отправил\s*(?P<amount>[\d\s]+(?:\.\d{1,2})?)\s*(?P<currency>[A-Z]{3}|[₽$€])\s*(?:<[^>]*>)?\s*(?:<[^>]*>)?(?P<message>.*?)(?:<[^>]*>)?$',
+            re.MULTILINE | re.DOTALL
         )
 
-        if not donation_blocks:
-            # Если не нашли по классу, попробуем найти все li с data-donation-id
-            donation_blocks = re.findall(
-                r'<li[^>]*data-donation-id="([^"]*)"[^>]*>(.*?)</li>',
-                html_content,
-                re.DOTALL | re.IGNORECASE
-            )
-
         processed = 0
-        for block in donation_blocks:
-            # Если блок пришёл как кортеж (data-id + содержимое) – обрабатываем
-            if isinstance(block, tuple):
-                donation_id = block[0]
-                block_content = block[1]
+        for match in donation_pattern.finditer(html_content):
+            amount_str = match.group('amount').replace(' ', '')
+            amount = float(amount_str)
+            currency_raw = match.group('currency')
+            if currency_raw in ('₽', 'RUB'):
+                currency = 'RUB'
+            elif currency_raw in ('$', 'USD'):
+                currency = 'USD'
+            elif currency_raw in ('€', 'EUR'):
+                currency = 'EUR'
             else:
-                # Ищем data-donation-id внутри div
-                id_match = re.search(r'data-donation-id="([^"]*)"', block)
-                donation_id = id_match.group(1) if id_match else None
-                block_content = block
+                currency = currency_raw
 
-            if not donation_id:
-                continue
+            raw_message = match.group('message').strip()
+            # Очищаем от HTML-тегов
+            message = html.unescape(re.sub(r'<[^>]+>', '', raw_message)).strip()
+
+            # Генерируем уникальный ID из хэша сообщения+суммы (так как ID в виджете может не быть)
+            import hashlib
+            donation_id = hashlib.md5(f'{amount}{currency}{message}'.encode()).hexdigest()
 
             if Donation.objects.filter(donation_id=donation_id).exists():
                 continue
-
-            # Извлекаем сумму
-            amount_match = re.search(r'([\d\s]+(?:\.\d{1,2})?)\s*(RUB|USD|EUR|₽|\$|€)', block_content, re.IGNORECASE)
-            if amount_match:
-                amount_str = amount_match.group(1).replace(' ', '')
-                amount = float(amount_str)
-                currency = amount_match.group(2)
-                if currency in ('₽', 'RUB'):
-                    currency = 'RUB'
-                elif currency in ('$', 'USD'):
-                    currency = 'USD'
-                elif currency in ('€', 'EUR'):
-                    currency = 'EUR'
-            else:
-                continue
-
-            # Извлекаем сообщение (обычно внутри <div class="message">)
-            msg_match = re.search(r'<div[^>]*class="[^"]*message[^"]*"[^>]*>(.*?)</div>', block_content, re.DOTALL)
-            message = ''
-            if msg_match:
-                message = html.unescape(re.sub(r'<[^>]+>', '', msg_match.group(1))).strip()
 
             # Поиск кода активации
             user = None
@@ -93,10 +74,9 @@ class Command(BaseCommand):
                 except Profile.DoesNotExist:
                     pass
 
-            # Проверка минимальной суммы
+            # Проверка минимальной суммы (можно временно убрать для теста)
             min_amount = settings.MIN_DONATION_AMOUNT_RUB
             if currency == 'RUB' and amount < min_amount:
-                # Недостаточная сумма – сохраняем без обработки
                 Donation.objects.create(
                     donation_id=donation_id,
                     amount=amount,
@@ -116,23 +96,23 @@ class Command(BaseCommand):
                     else:
                         profile.subscription_expiry = timezone.now() + timedelta(days=days)
                     profile.save()
-                processed = True
+                processed_flag = True
             else:
-                processed = False
+                processed_flag = False
 
             Donation.objects.create(
                 donation_id=donation_id,
                 amount=amount,
                 currency=currency,
                 message=message,
-                processed=processed,
+                processed=processed_flag,
                 user=user
             )
 
-            if processed:
-                self.stdout.write(self.style.SUCCESS(f'Активирована подписка для {user.username} (донат #{donation_id})'))
+            if processed_flag:
+                self.stdout.write(self.style.SUCCESS(f'Активирована подписка для {user.username} (донат {donation_id})'))
             else:
-                self.stdout.write(self.style.WARNING(f'Донат #{donation_id} не обработан (код не найден)'))
+                self.stdout.write(self.style.WARNING(f'Донат {donation_id} не обработан (код не найден)'))
 
             processed += 1
 
