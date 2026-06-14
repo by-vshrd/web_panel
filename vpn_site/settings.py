@@ -104,7 +104,8 @@ CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
 USE_X_FORWARDED_HOST = True
 
 # Donation Alerts API
-DONATION_ALERTS_API_TOKEN = os.environ.get('DONATION_ALERTS_API_TOKEN', '')
+DONATION_ALERTS_API_TOKEN = 'gP92lcrgyQ8QuV6dGlYMTndnnXYpvlF8J7K811pZ'
+#DONATION_ALERTS_API_TOKEN = os.environ.get('DONATION_ALERTS_API_TOKEN', '')
 DONATION_ALERTS_API_URL = 'https://www.donationalerts.com/api/v1/alerts/donations'
 MIN_DONATION_AMOUNT_RUB = int(os.environ.get('MIN_DONATION_AMOUNT_RUB', 100))
 DEFAULT_DAYS_PER_DONATION = int(os.environ.get('DEFAULT_DAYS_PER_DONATION', 30))
