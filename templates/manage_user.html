@@ -31,7 +31,11 @@
       </form>
     </div>
   </form>
-  <div class="card">
+</div>
+{% endfor %}
+
+{% if profiles %}
+<div class="card">
     <h3>Ручное продление</h3>
     <form method="post" action="{% url 'manual_extend' user_obj.id %}">
         {% csrf_token %}
@@ -41,7 +45,9 @@
         <input type="text" name="amount" placeholder="0.00">
         <button type="submit" class="btn">Продлить подписки</button>
     </form>
-  </div>
+    <p style="color: var(--muted); font-size:0.85rem; margin-top:0.5rem;">
+        При нажатии все активные подписки пользователя будут продлены на указанное количество дней.
+    </p>
 </div>
-{% endfor %}
+{% endif %}
 {% endblock %}

@@ -8,7 +8,7 @@ from django.utils import timezone
 from accounts.models import Profile, Donation
 
 class Command(BaseCommand):
-    help = 'Опрашивает DonatePay API и активирует подписки по кодам'
+    help = 'Опрашивает DonatePay API и активирует подписки по кодам (с детальной отладкой)'
 
     def handle(self, *args, **options):
         token = settings.DONATEPAY_API_TOKEN
@@ -76,16 +76,15 @@ class Command(BaseCommand):
             currency = tx.get('currency', 'RUB')
             comment = tx.get('comment', '').strip()
 
-            # Ищем код активации – теперь более гибкий шаблон
             code_match = re.search(r'VSH-[\w-]+', comment)
             user = None
             if code_match:
                 code = code_match.group(0)
-                self.stdout.write(f'Найден код в комментарии: {code}')
+                self.stdout.write(f'Найден код: {code}')
                 try:
                     profile = Profile.objects.get(activation_code=code)
                     user = profile.user
-                    self.stdout.write(self.style.SUCCESS(f'Пользователь найден: {user.username}'))
+                    self.stdout.write(self.style.SUCCESS(f'Пользователь: {user.username}'))
                 except Profile.DoesNotExist:
                     self.stdout.write(self.style.WARNING(f'Код {code} не найден в базе'))
             else:
@@ -106,12 +105,15 @@ class Command(BaseCommand):
 
             if user:
                 days = settings.DEFAULT_DAYS_PER_DONATION
+                self.stdout.write(f'Продлеваю на {days} дней…')
                 for profile in user.profiles.all():
+                    old = profile.subscription_expiry
                     if profile.is_subscription_active():
-                        profile.subscription_expiry += timedelta(days=days)
+                        profile.subscription_expiry = old + timedelta(days=days)
                     else:
                         profile.subscription_expiry = timezone.now() + timedelta(days=days)
                     profile.save()
+                    self.stdout.write(f'  {profile.protocol}: {old} -> {profile.subscription_expiry}')
                 processed = True
             else:
                 processed = False
@@ -127,6 +129,6 @@ class Command(BaseCommand):
             )
 
             if processed:
-                self.stdout.write(self.style.SUCCESS(f'Активирована подписка для {user.username} (транзакция #{tx_id})'))
+                self.stdout.write(self.style.SUCCESS(f'Активирована подписка для {user.username} (ID {tx_id})'))
             else:
                 self.stdout.write(self.style.WARNING(f'Транзакция #{tx_id} не обработана'))
