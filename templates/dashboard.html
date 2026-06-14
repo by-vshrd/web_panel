@@ -61,7 +61,21 @@
     </div>
     {% endif %}
 
+    <div style="text-align: center; margin-top: 1rem;">
+        <a href="{% url 'qr_code' protocol=profile.protocol %}" class="btn" style="margin-right: 0.5rem;">📱 QR‑код</a>
+        <a href="{% url 'subscription_link' protocol=profile.protocol %}" class="btn btn-outline" target="_blank">🔗 Ссылка</a>
+    </div>
+</div>
+{% empty %}
+    {% if not available_protocols %}
     <div class="card" style="text-align: center;">
+        <p style="color: var(--muted);">У вас пока нет ни одного профиля. Но все протоколы недоступны — обратитесь к администратору.</p>
+    </div>
+    {% endif %}
+{% endfor %}
+
+{% if profiles %}
+<div class="card" style="text-align: center;">
     <h2>Пополнение подписки</h2>
     <p style="color: var(--muted);">Совершите донат через Donation Alerts и укажите ваш персональный код в сообщении.</p>
     <div style="font-size: 1.5rem; font-family: monospace; margin: 1rem 0;" id="activation-code">
@@ -76,22 +90,14 @@
 <script>
     async function fetchCode() {
         const resp = await fetch('/accounts/activation-code/');
-        const code = await resp.text();
-        document.getElementById('activation-code').textContent = code;
+        if (resp.ok) {
+            const code = await resp.text();
+            document.getElementById('activation-code').textContent = code;
+        } else {
+            document.getElementById('activation-code').textContent = 'Ошибка: ' + await resp.text();
+        }
     }
     fetchCode();
 </script>
-
-    <div style="text-align: center; margin-top: 1rem;">
-        <a href="{% url 'qr_code' protocol=profile.protocol %}" class="btn" style="margin-right: 0.5rem;">📱 QR‑код</a>
-        <a href="{% url 'subscription_link' protocol=profile.protocol %}" class="btn btn-outline" target="_blank">🔗 Ссылка</a>
-    </div>
-</div>
-{% empty %}
-    {% if not available_protocols %}
-    <div class="card" style="text-align: center;">
-        <p style="color: var(--muted);">У вас пока нет ни одного профиля. Но все протоколы недоступны — обратитесь к администратору.</p>
-    </div>
-    {% endif %}
-{% endfor %}
+{% endif %}
 {% endblock %}

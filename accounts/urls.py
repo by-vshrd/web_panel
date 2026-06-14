@@ -13,6 +13,7 @@ urlpatterns = [
     path('create-profile/', views.create_profile, name='create_profile'),
     path('qr/<str:protocol>/', views.qr_code, name='qr_code'),
     path('link/<str:protocol>/', views.subscription_link, name='subscription_link'),
+    path('activation-code/', views.get_activation_code, name='activation_code'),
 
     # Статус сервера
     path('server-status/', views.server_status, name='server_status'),
@@ -22,11 +23,10 @@ urlpatterns = [
     path('manage-user/<int:user_id>/', views.manage_user, name='manage_user'),
     path('delete-profile/<int:profile_id>/', views.delete_profile, name='delete_profile'),
     path('delete-user/<int:user_id>/', views.delete_user, name='delete_user'),
+    path('manual-extend/<int:user_id>/', views.manual_extend, name='manual_extend'),
     path('admin-settings/', views.admin_settings, name='admin_settings'),
     path('sync-profile-sub-id/<int:profile_id>/', views.sync_profile_sub_id, name='sync_profile_sub_id'),
-    # Оплата
-    path('activation-code/', views.get_activation_code, name='activation_code'),
-    path('donation-webhook/', views.donation_webhook, name='donation_webhook'),
-    path('manual-extend/<int:user_id>/', views.manual_extend, name='manual_extend'),
+
+    # API-опрос донатов (защищённый эндпоинт)
     path('fetch-donations/', views.fetch_donations_api, name='fetch_donations_api'),
 ]
