@@ -1,5 +1,6 @@
 import requests
 import re
+import time
 from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.conf import settings
@@ -15,7 +16,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR('Не задан DONATEPAY_API_TOKEN'))
             return
 
-        # Получаем ID последнего обработанного доната, чтобы не обрабатывать повторно
         last_donation = Donation.objects.filter(source='donatepay').order_by('-created_at').first()
         after_id = last_donation.donation_id if last_donation else None
 
@@ -23,14 +23,26 @@ class Command(BaseCommand):
         headers = {'Authorization': f'Bearer {token}'}
         params = {'limit': 50}
         if after_id:
-            params['after'] = after_id   # если API поддерживает (уточните в документации DonatePay)
+            params['after'] = after_id
 
-        try:
-            resp = requests.get(url, headers=headers, params=params, timeout=15)
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Ошибка запроса к API: {e}'))
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                resp = requests.get(url, headers=headers, params=params, timeout=15)
+                if resp.status_code == 429:
+                    self.stdout.write(self.style.WARNING(
+                        f'Слишком много запросов (429). Ожидание 60 секунд перед повтором (попытка {attempt+1}/{max_retries})...'
+                    ))
+                    time.sleep(60)
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                break
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Ошибка запроса к API: {e}'))
+                return
+        else:
+            self.stdout.write(self.style.ERROR('Не удалось выполнить запрос после нескольких попыток.'))
             return
 
         transactions = data.get('data', [])
@@ -45,9 +57,8 @@ class Command(BaseCommand):
 
             amount = float(tx.get('amount', 0))
             currency = tx.get('currency', 'RUB')
-            message = tx.get('comment', '').strip()   # поле может называться comment или message
+            message = tx.get('comment', '').strip()
 
-            # Поиск кода активации
             user = None
             code_match = re.search(r'VSH-\w{4}-[\w]+', message)
             if code_match:
