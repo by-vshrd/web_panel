@@ -20,18 +20,27 @@ class Command(BaseCommand):
         after_id = last_donation.donation_id if last_donation else None
 
         url = 'https://donatepay.ru/api/v1/transactions'
-        headers = {'Authorization': f'Bearer {token}'}
-        params = {'limit': 50}
+        params = {
+            'access_token': token,
+            'limit': 50,
+            'order': 'ASC',
+            'type': 'donation',
+        }
         if after_id:
             params['after'] = after_id
 
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                resp = requests.get(url, headers=headers, params=params, timeout=15)
+                resp = requests.get(
+                    url,
+                    params=params,
+                    timeout=15,
+                    proxies={"http": None, "https": None}
+                )
                 if resp.status_code == 429:
                     self.stdout.write(self.style.WARNING(
-                        f'Слишком много запросов (429). Ожидание 60 секунд перед повтором (попытка {attempt+1}/{max_retries})...'
+                        f'429 – ожидание 60 секунд (попытка {attempt+1}/{max_retries})…'
                     ))
                     time.sleep(60)
                     continue
@@ -39,10 +48,14 @@ class Command(BaseCommand):
                 data = resp.json()
                 break
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f'Ошибка запроса к API: {e}'))
+                self.stdout.write(self.style.ERROR(f'Ошибка запроса: {e}'))
                 return
         else:
-            self.stdout.write(self.style.ERROR('Не удалось выполнить запрос после нескольких попыток.'))
+            self.stdout.write(self.style.ERROR('Не удалось выполнить запрос.'))
+            return
+
+        if data.get('status') != 'success':
+            self.stdout.write(self.style.ERROR(f"API error: {data.get('message', '')}"))
             return
 
         transactions = data.get('data', [])
@@ -55,19 +68,28 @@ class Command(BaseCommand):
             if Donation.objects.filter(donation_id=tx_id).exists():
                 continue
 
-            amount = float(tx.get('amount', 0))
-            currency = tx.get('currency', 'RUB')
-            message = tx.get('comment', '').strip()
+            status = tx.get('status', '')
+            if status not in ('success', 'user'):
+                continue
 
+            amount = float(tx.get('sum', 0))
+            currency = tx.get('currency', 'RUB')
+            comment = tx.get('comment', '').strip()
+
+            # Ищем код активации – теперь более гибкий шаблон
+            code_match = re.search(r'VSH-[\w-]+', comment)
             user = None
-            code_match = re.search(r'VSH-\w{4}-[\w]+', message)
             if code_match:
                 code = code_match.group(0)
+                self.stdout.write(f'Найден код в комментарии: {code}')
                 try:
                     profile = Profile.objects.get(activation_code=code)
                     user = profile.user
+                    self.stdout.write(self.style.SUCCESS(f'Пользователь найден: {user.username}'))
                 except Profile.DoesNotExist:
-                    pass
+                    self.stdout.write(self.style.WARNING(f'Код {code} не найден в базе'))
+            else:
+                self.stdout.write(f'Код не найден в комментарии: "{comment}"')
 
             min_amount = settings.MIN_DONATION_AMOUNT_RUB
             if currency == 'RUB' and amount < min_amount:
@@ -76,7 +98,7 @@ class Command(BaseCommand):
                     source='donatepay',
                     amount=amount,
                     currency=currency,
-                    message=message,
+                    message=comment,
                     processed=False,
                     user=user
                 )
@@ -99,7 +121,7 @@ class Command(BaseCommand):
                 source='donatepay',
                 amount=amount,
                 currency=currency,
-                message=message,
+                message=comment,
                 processed=processed,
                 user=user
             )
@@ -107,4 +129,4 @@ class Command(BaseCommand):
             if processed:
                 self.stdout.write(self.style.SUCCESS(f'Активирована подписка для {user.username} (транзакция #{tx_id})'))
             else:
-                self.stdout.write(self.style.WARNING(f'Транзакция #{tx_id} не обработана (код не найден)'))
+                self.stdout.write(self.style.WARNING(f'Транзакция #{tx_id} не обработана'))
