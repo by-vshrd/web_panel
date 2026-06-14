@@ -24,4 +24,9 @@ urlpatterns = [
     path('delete-user/<int:user_id>/', views.delete_user, name='delete_user'),
     path('admin-settings/', views.admin_settings, name='admin_settings'),
     path('sync-profile-sub-id/<int:profile_id>/', views.sync_profile_sub_id, name='sync_profile_sub_id'),
+    # Оплата
+    path('activation-code/', views.get_activation_code, name='activation_code'),
+    path('donation-webhook/', views.donation_webhook, name='donation_webhook'),
+    path('manual-extend/<int:user_id>/', views.manual_extend, name='manual_extend'),
+    path('fetch-donations/', views.fetch_donations_api, name='fetch_donations_api'),
 ]

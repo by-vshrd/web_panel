@@ -166,6 +166,16 @@ def subscription_link(request, protocol):
     sub_link = f'https://{settings.XUI_SERVER_DOMAIN}:2096/sub/{profile.vpn_sub_id}'
     return HttpResponse(sub_link)
 
+@login_required
+def get_activation_code(request):
+    profile = request.user.profile
+    if not profile.activation_code:
+        # Генерируем уникальный код: VSH-{username}-{8 случайных символов}
+        import secrets
+        code = f"VSH-{request.user.username[:4].upper()}-{secrets.token_hex(4)}"
+        profile.activation_code = code
+        profile.save()
+    return HttpResponse(profile.activation_code)
 
 def logout_view(request):
     logout(request)
@@ -332,3 +342,143 @@ def sync_profile_sub_id(request, profile_id):
         except Exception as e:
             messages.error(request, f'Ошибка API: {e}')
     return redirect('manage_user', user_id=profile.user.id)
+
+import hashlib
+import hmac
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+
+@csrf_exempt
+def donation_webhook(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    # 1. Проверка подписи (секретный ключ из настроек)
+    received_signature = request.headers.get('X-Donationalerts-Signature')
+    if not received_signature:
+        return HttpResponse(status=403)
+
+    secret = settings.DONATION_ALERTS_SECRET.encode('utf-8')
+    body = request.body
+    computed_signature = hmac.new(secret, body, hashlib.sha256).hexdigest()
+
+    if not hmac.compare_digest(received_signature, computed_signature):
+        return HttpResponse(status=403)
+
+    # 2. Разбор JSON
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponse(status=400)
+
+    # Основные поля доната
+    donation_id = str(data.get('id'))
+    amount = float(data.get('amount', 0))
+    currency = data.get('currency', 'RUB')
+    message = data.get('message', '').strip()
+
+    if not donation_id or not amount:
+        return HttpResponse(status=400)
+
+    # 3. Проверка на дубликат
+    if Donation.objects.filter(donation_id=donation_id).exists():
+        return HttpResponse(status=200)  # уже обработан
+
+    # 4. Поиск кода активации в сообщении
+    # Код имеет формат VSH-XXXX-{hex}
+    import re
+    match = re.search(r'VSH-\w{4}-[\w]+', message)
+    user = None
+    if match:
+        code = match.group(0)
+        try:
+            profile = Profile.objects.get(activation_code=code)
+            user = profile.user
+        except Profile.DoesNotExist:
+            pass
+
+    # 5. Проверка минимальной суммы (если валюта RUB)
+    min_amount = settings.MIN_DONATION_AMOUNT_RUB
+    if currency == 'RUB' and amount < min_amount:
+        # Недостаточная сумма – сохраняем донат без обработки
+        Donation.objects.create(
+            donation_id=donation_id,
+            amount=amount,
+            currency=currency,
+            message=message,
+            processed=False,
+            user=user
+        )
+        return HttpResponse(status=200)
+
+    # 6. Активация/продление подписки
+    days = settings.DEFAULT_DAYS_PER_DONATION
+    if user:
+        # Продлеваем все активные профили или создаём, если нет?
+        # Лучше продлить самый последний профиль или дать выбрать вручную.
+        # Пока для простоты: продлеваем все профили пользователя.
+        for profile in user.profiles.all():
+            if profile.is_subscription_active():
+                profile.subscription_expiry += timedelta(days=days)
+            else:
+                profile.subscription_expiry = timezone.now() + timedelta(days=days)
+            profile.save()
+
+    # 7. Сохраняем транзакцию
+    Donation.objects.create(
+        donation_id=donation_id,
+        amount=amount,
+        currency=currency,
+        message=message,
+        processed=True,
+        user=user
+    )
+
+    return HttpResponse(status=200)
+
+@staff_member_required
+def manual_extend(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+    if request.method == 'POST':
+        days = int(request.POST.get('days', 30))
+        amount = request.POST.get('amount', '0').strip()
+        # Продлеваем все профили пользователя
+        for profile in user.profiles.all():
+            if profile.is_subscription_active():
+                profile.subscription_expiry += timedelta(days=days)
+            else:
+                profile.subscription_expiry = timezone.now() + timedelta(days=days)
+            profile.save()
+        # Опционально: создать запись в Donation с пометкой manual
+        if amount:
+            Donation.objects.create(
+                donation_id=f'manual-{timezone.now().timestamp()}',
+                amount=float(amount),
+                currency='RUB',
+                message='Ручное продление администратором',
+                processed=True,
+                user=user
+            )
+        messages.success(request, f'Подписки продлены на {days} дней.')
+        return redirect('manage_user', user_id=user.id)
+    return redirect('manage_user', user_id=user.id)
+
+
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def fetch_donations_api(request):
+    # Проверяем токен безопасности
+    token = request.GET.get('token', '')
+    if token != settings.CRON_SECRET:
+        return HttpResponse(status=403)
+
+    # Здесь та же логика, что и в management-команде
+    try:
+        from .management.commands.fetch_donations import Command
+        cmd = Command()
+        cmd.handle()
+    except Exception as e:
+        return HttpResponse(f'Error: {e}', status=500)
+
+    return HttpResponse('OK')
