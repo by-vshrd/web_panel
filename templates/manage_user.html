@@ -31,15 +31,17 @@
       </form>
     </div>
   </form>
-  <h3>Ручное продление</h3>
+  <div class="card">
+    <h3>Ручное продление</h3>
     <form method="post" action="{% url 'manual_extend' user_obj.id %}">
         {% csrf_token %}
         <label>Количество дней:</label>
         <input type="number" name="days" value="30" min="1">
-        <label>Сумма (для истории, опционально):</label>
+        <label>Сумма (опционально):</label>
         <input type="text" name="amount" placeholder="0.00">
         <button type="submit" class="btn">Продлить подписки</button>
     </form>
+  </div>
 </div>
 {% endfor %}
 {% endblock %}
