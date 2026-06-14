@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Подтверждение удаления{% endblock %}
+{% block content %}
+<h2>Удалить {{ type }} "{{ object }}"?</h2>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background:var(--danger);">Подтвердить удаление</button>
+    <a href="javascript:history.back()" class="btn btn-outline">Отмена</a>
+</form>
+{% endblock %}

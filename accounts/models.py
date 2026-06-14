@@ -15,8 +15,9 @@ class Profile(models.Model):
     vpn_uuid = models.UUIDField(default=uuid.uuid4, editable=False)
     vpn_inbound_id = models.IntegerField()
     vpn_sub_id = models.CharField(max_length=255, blank=True, null=True)
+    vpn_client_id = models.IntegerField(null=True, blank=True)
     subscription_expiry = models.DateTimeField(null=True, blank=True)
-    total_gb = models.IntegerField(default=0)          # <-- новое поле (0 = безлимит)
+    total_gb = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -37,7 +38,7 @@ class Profile(models.Model):
 class AdminSettings(models.Model):
     """Синглтон‑настройки по умолчанию (одна запись)."""
     default_days = models.IntegerField(default=30)
-    default_traffic_gb = models.IntegerField(default=0)  # 0 – безлимит
+    default_traffic_gb = models.IntegerField(default=0)
 
     def save(self, *args, **kwargs):
         self.pk = 1

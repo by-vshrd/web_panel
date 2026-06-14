@@ -1,21 +1,26 @@
-import io, qrcode, json, requests
+import io
+import qrcode
+import json
+import requests
 from uuid import uuid4
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.generic import CreateView
 from django.urls import reverse_lazy
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST, require_GET
+from django.contrib import messages
 from .forms import SignUpForm
 from .models import Profile, AdminSettings
 from .api import XUIClient
 import urllib3
-from django.contrib.auth.models import User
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
@@ -109,7 +114,9 @@ def create_profile(request):
     try:
         client = XUIClient()
         result = client.add_client(email, str(vpn_uuid), inbound_id)
+        real_uuid = result['uuid']
         sub_id = result['sub_id']
+        client_id = result.get('client_id')   # числовой ID клиента
     except Exception as e:
         return HttpResponse(f'Ошибка создания: {e}', status=500)
 
@@ -119,9 +126,10 @@ def create_profile(request):
         user=request.user,
         protocol=protocol,
         vpn_email=email,
-        vpn_uuid=vpn_uuid,
+        vpn_uuid=real_uuid,
         vpn_inbound_id=inbound_id,
         vpn_sub_id=sub_id,
+        vpn_client_id=client_id,              # сохраняем числовой ID
         subscription_expiry=timezone.now() + timedelta(days=admin_cfg.default_days),
         total_gb=admin_cfg.default_traffic_gb,
     )
@@ -187,7 +195,6 @@ def admin_dashboard(request):
     }
     return render(request, 'admin_dashboard.html', context)
 
-
 @staff_member_required
 def manage_user(request, user_id):
     user = get_object_or_404(User, pk=user_id)
@@ -195,33 +202,107 @@ def manage_user(request, user_id):
 
     if request.method == 'POST':
         profile_id = request.POST.get('profile_id')
-        if profile_id:
+        action = request.POST.get('action')
+
+        if action == 'sync_sub_id':
+            # Отдельная кнопка синхронизации sub_id (восстановление из панели)
             profile = get_object_or_404(Profile, pk=profile_id, user=user)
-            new_expiry = request.POST.get('expiry')
-            new_enable = request.POST.get('enable') == 'on'
-            new_total_gb = request.POST.get('total_gb')
-
-            if new_expiry:
-                try:
-                    profile.subscription_expiry = timezone.make_aware(
-                        datetime.strptime(new_expiry, '%Y-%m-%d')
-                    )
-                except ValueError:
-                    pass
-            else:
-                profile.subscription_expiry = None
-
-            if not new_enable:
-                profile.subscription_expiry = timezone.now() - timedelta(days=1)
-
-            if new_total_gb is not None and new_total_gb.isdigit():
-                profile.total_gb = int(new_total_gb)
-
-            profile.save()
+            try:
+                client = XUIClient()
+                fresh_sub_id = client.get_sub_id_by_email(profile.vpn_email)
+                if fresh_sub_id:
+                    profile.vpn_sub_id = fresh_sub_id
+                    profile.save()
+                    messages.success(request, f'sub_id обновлён: {fresh_sub_id}')
+                else:
+                    messages.error(request, 'Не удалось найти клиента в панели по email.')
+            except Exception as e:
+                messages.error(request, f'Ошибка API: {e}')
             return redirect('manage_user', user_id=user.id)
 
-    return render(request, 'manage_user.html', {'user_obj': user, 'profiles': profiles})
+        # Сохранение изменений профиля
+        profile = get_object_or_404(Profile, pk=profile_id, user=user)
+        new_email = request.POST.get('email', '').strip()
+        new_expiry = request.POST.get('expiry', '')
+        new_enable = request.POST.get('enable') == 'on'
+        new_total_gb = request.POST.get('total_gb', '')
 
+        expiry_dt = None
+        if new_expiry:
+            try:
+                naive = datetime.strptime(new_expiry, '%Y-%m-%d')
+                expiry_dt = timezone.make_aware(naive)
+            except ValueError:
+                messages.error(request, 'Неверный формат даты')
+                return redirect('manage_user', user_id=user.id)
+
+        # Проверяем наличие sub_id для синхронизации
+        if not profile.vpn_sub_id:
+            messages.error(request, 'Нет sub_id для синхронизации. Сначала синхронизируйте ID.')
+            return redirect('manage_user', user_id=user.id)
+
+        # Синхронизация с панелью через subId
+        try:
+            client = XUIClient()
+            client.update_client(
+                email=profile.vpn_email if not new_email else new_email,
+                sub_id=profile.vpn_sub_id,
+                uuid=str(profile.vpn_uuid),
+                expiry_time=expiry_dt,
+                enable=new_enable,
+                total_gb=int(new_total_gb) if new_total_gb.isdigit() else None
+            )
+        except Exception as e:
+            messages.error(request, f'Ошибка API: {e}')
+            return redirect('manage_user', user_id=user.id)
+
+        # Локальное обновление
+        if new_email:
+            profile.vpn_email = new_email
+        profile.subscription_expiry = expiry_dt
+        if not new_enable:
+            profile.subscription_expiry = timezone.now() - timedelta(days=1)
+        if new_total_gb.isdigit():
+            profile.total_gb = int(new_total_gb)
+        profile.save()
+        messages.success(request, 'Профиль обновлён.')
+        return redirect('manage_user', user_id=user.id)
+
+    context = {'user_obj': user, 'profiles': profiles}
+    return render(request, 'manage_user.html', context)
+
+@staff_member_required
+def delete_profile(request, profile_id):
+    profile = get_object_or_404(Profile, pk=profile_id)
+    user = profile.user
+    if request.method == 'POST':
+        if profile.vpn_sub_id:
+            try:
+                client = XUIClient()
+                client.delete_client(profile.vpn_email)
+            except Exception as e:
+                messages.error(request, f'Ошибка API при удалении: {e}')
+                return redirect('manage_user', user_id=user.id)
+        profile.delete()
+        messages.success(request, 'Профиль удалён.')
+        return redirect('manage_user', user_id=user.id)
+    return render(request, 'confirm_delete.html', {'object': profile, 'type': 'профиль'})
+
+@staff_member_required
+def delete_user(request, user_id):
+    user_obj = get_object_or_404(User, pk=user_id)
+    if request.method == 'POST':
+        for profile in user_obj.profiles.all():
+            if profile.vpn_sub_id:
+                try:
+                    client = XUIClient()
+                    client.delete_client(profile.vpn_email)
+                except Exception:
+                    pass
+        user_obj.delete()
+        messages.success(request, 'Пользователь и его профили удалены.')
+        return redirect('admin_dashboard')
+    return render(request, 'confirm_delete.html', {'object': user_obj, 'type': 'пользователя'})
 
 @staff_member_required
 def admin_settings(request):
@@ -233,3 +314,21 @@ def admin_settings(request):
         return redirect('admin_settings')
 
     return render(request, 'admin_settings.html', {'settings': settings_obj})
+
+
+@staff_member_required
+def sync_profile_sub_id(request, profile_id):
+    profile = get_object_or_404(Profile, pk=profile_id)
+    if request.method == 'POST':
+        try:
+            client = XUIClient()
+            fresh_sub_id = client.get_sub_id_by_email(profile.vpn_email)
+            if fresh_sub_id:
+                profile.vpn_sub_id = fresh_sub_id
+                profile.save()
+                messages.success(request, f'sub_id обновлён: {fresh_sub_id}')
+            else:
+                messages.error(request, 'Не удалось найти клиента в панели по email.')
+        except Exception as e:
+            messages.error(request, f'Ошибка API: {e}')
+    return redirect('manage_user', user_id=profile.user.id)

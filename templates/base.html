@@ -180,7 +180,7 @@
                 {% if user.is_staff %}
                     <a href="{% url 'admin_dashboard' %}">Админка</a>
                     <a href="{% url 'admin_settings' %}">Настройки</a>
-                    <a href="{{ XUI_API_URL }}" target="_blank">3X-UI</a>
+                    <a href="https://78.17.4.72:32894/login/panel/" target="_blank">3X-UI</a>
                 {% endif %}
                 <a href="{% url 'logout' %}">Выйти</a>
             {% else %}
@@ -190,8 +190,15 @@
         </nav>
     </div>
     <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="card" style="background: {% if message.tags == 'success' %}var(--success){% else %}var(--danger){% endif %}; color: white; padding: 0.8rem; margin-bottom: 1rem;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
         {% block content %}{% endblock %}
-        <div class="footer-note">BETA-build v0.6 by V.</div>
+        <div class="footer-note">BETA-build v0.2 by V.</div>
     </div>
 </body>
 </html>
