@@ -321,22 +321,41 @@ def delete_user(request, user_id):
         return redirect('admin_dashboard')
     return render(request, 'confirm_delete.html', {'object': user_obj, 'type': 'пользователя'})
 
-
 @staff_member_required
 def manual_extend(request, user_id):
     user = get_object_or_404(User, pk=user_id)
     if request.method == 'POST':
         days = int(request.POST.get('days', 30))
         amount = request.POST.get('amount', '0').strip()
+        try:
+            xui = XUIClient()
+        except Exception as e:
+            messages.error(request, f'Не удалось подключиться к панели: {e}')
+            return redirect('manage_user', user_id=user.id)
+
         for profile in user.profiles.all():
             if profile.is_subscription_active():
-                profile.subscription_expiry += timedelta(days=days)
+                new_expiry = profile.subscription_expiry + timedelta(days=days)
             else:
-                profile.subscription_expiry = timezone.now() + timedelta(days=days)
+                new_expiry = timezone.now() + timedelta(days=days)
+            profile.subscription_expiry = new_expiry
             profile.save()
+            # Синхронизация с панелью
+            try:
+                xui.update_client(
+                    email=profile.vpn_email,
+                    sub_id=profile.vpn_sub_id,
+                    uuid=str(profile.vpn_uuid),
+                    expiry_time=new_expiry,
+                    enable=True,
+                    total_gb=profile.total_gb
+                )
+            except Exception as e:
+                messages.error(request, f'Ошибка синхронизации {profile.get_protocol_display()}: {e}')
         if amount:
             Donation.objects.create(
                 donation_id=f'manual-{timezone.now().timestamp()}',
+                source='manual',
                 amount=float(amount),
                 currency='RUB',
                 message='Ручное продление администратором',
@@ -346,7 +365,6 @@ def manual_extend(request, user_id):
         messages.success(request, f'Подписки продлены на {days} дней.')
         return redirect('manage_user', user_id=user.id)
     return redirect('manage_user', user_id=user.id)
-
 
 @staff_member_required
 def admin_settings(request):

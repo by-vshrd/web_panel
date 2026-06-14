@@ -6,9 +6,10 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.utils import timezone
 from accounts.models import Profile, Donation
+from accounts.api import XUIClient
 
 class Command(BaseCommand):
-    help = 'Опрашивает DonatePay API и активирует подписки по кодам (с детальной отладкой)'
+    help = 'Опрашивает DonatePay API и активирует подписки по кодам (с синхронизацией в 3X-UI)'
 
     def handle(self, *args, **options):
         token = settings.DONATEPAY_API_TOKEN
@@ -63,6 +64,13 @@ class Command(BaseCommand):
             self.stdout.write('Нет новых транзакций.')
             return
 
+        # Один экземпляр клиента для всех операций
+        try:
+            xui = XUIClient()
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Не удалось подключиться к 3X-UI: {e}'))
+            return
+
         for tx in transactions:
             tx_id = str(tx.get('id'))
             if Donation.objects.filter(donation_id=tx_id).exists():
@@ -109,11 +117,25 @@ class Command(BaseCommand):
                 for profile in user.profiles.all():
                     old = profile.subscription_expiry
                     if profile.is_subscription_active():
-                        profile.subscription_expiry = old + timedelta(days=days)
+                        new_expiry = old + timedelta(days=days)
                     else:
-                        profile.subscription_expiry = timezone.now() + timedelta(days=days)
+                        new_expiry = timezone.now() + timedelta(days=days)
+                    profile.subscription_expiry = new_expiry
                     profile.save()
-                    self.stdout.write(f'  {profile.protocol}: {old} -> {profile.subscription_expiry}')
+
+                    # Синхронизация с панелью 3X-UI
+                    try:
+                        xui.update_client(
+                            email=profile.vpn_email,
+                            sub_id=profile.vpn_sub_id,
+                            uuid=str(profile.vpn_uuid),
+                            expiry_time=new_expiry,
+                            enable=True,
+                            total_gb=profile.total_gb
+                        )
+                        self.stdout.write(f'  {profile.protocol}: {old} -> {new_expiry} (синхронизировано с панелью)')
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f'  Ошибка синхронизации {profile.protocol}: {e}'))
                 processed = True
             else:
                 processed = False
