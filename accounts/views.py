@@ -381,13 +381,14 @@ def sync_profile_sub_id(request, profile_id):
 # ---------- API-опрос донатов (защищённый эндпоинт) ----------
 @csrf_exempt
 @csrf_exempt
+@csrf_exempt
 def fetch_donations_api(request):
     token = request.GET.get('token', '')
     if token != settings.CRON_SECRET:
         return HttpResponse(status=403)
 
     try:
-        from .management.commands.fetch_donations_widget import Command
+        from .management.commands.fetch_donations_donatepay import Command
         cmd = Command()
         cmd.handle()
     except Exception as e:

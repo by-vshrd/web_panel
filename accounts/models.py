@@ -52,9 +52,9 @@ class AdminSettings(models.Model):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 
-
 class Donation(models.Model):
     donation_id = models.CharField(max_length=100, unique=True)
+    source = models.CharField(max_length=20, default='donationalerts')   # ← добавьте
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=10)
     message = models.TextField(blank=True)
