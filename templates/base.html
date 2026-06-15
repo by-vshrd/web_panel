@@ -169,10 +169,8 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* Уведомления — теперь строго под навбаром */
+        /* Уведомления – обычный блок перед навбаром, не липкий */
         #global-notifications {
-            position: sticky;
-            top: 56px;               /* высота навбара */
             z-index: 5;
         }
         .global-notif {
@@ -227,7 +225,7 @@
     </style>
 </head>
 <body>
-    <!-- Глобальные уведомления (прилипают под навбаром) -->
+    <!-- Глобальные уведомления (просто блок, не липкий) -->
     {% if active_notifications %}
     <div id="global-notifications">
         {% for notif in active_notifications %}
