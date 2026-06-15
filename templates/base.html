@@ -139,27 +139,20 @@
             opacity: 0.6;
             padding: 1rem 0;
         }
-        .status-indicator {
+        /* Индикатор статуса в навбаре */
+        .navbar-status {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin: 1.5rem 0;
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
-            font-size: 0.95rem;
-            font-weight: 500;
+            gap: 0.4rem;
+            font-size: 0.85rem;
             color: var(--text);
-            transition: border-color 0.3s, background 0.3s;
+            margin-left: 1rem;
         }
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background: gray;
-            box-shadow: 0 0 8px currentColor;
             animation: pulse 2s infinite;
         }
         .status-dot.online { background: var(--success); }
@@ -176,18 +169,24 @@
         <a href="/" class="logo">🔒 VPN</a>
         <nav>
             {% if user.is_authenticated %}
-            <a href="{% url 'faq' %}">FAQ</a>
                 <a href="{% url 'dashboard' %}">Кабинет</a>
                 {% if user.is_staff %}
                     <a href="{% url 'admin_dashboard' %}">Админка</a>
                     <a href="{% url 'admin_settings' %}">Настройки</a>
                     <a href="https://78.17.4.72:32894/login/panel/" target="_blank">3X-UI</a>
                 {% endif %}
+                <a href="{% url 'faq' %}">FAQ</a>
                 <a href="{% url 'logout' %}">Выйти</a>
             {% else %}
+                <a href="{% url 'faq' %}">FAQ</a>
                 <a href="{% url 'login' %}">Войти</a>
                 <a href="{% url 'signup' %}" class="btn">Регистрация</a>
             {% endif %}
+            <!-- Статус сервера -->
+            <span class="navbar-status" id="navbar-status">
+                <span id="status-dot" class="status-dot"></span>
+                <span id="status-text">Проверка...</span>
+            </span>
         </nav>
     </div>
     <div class="container">
@@ -201,5 +200,28 @@
         {% block content %}{% endblock %}
         <div class="footer-note">BETA-build v0.2 by V.</div>
     </div>
+
+    <script>
+        async function updateServerStatus() {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            try {
+                const response = await fetch('/accounts/server-status/');
+                const data = await response.json();
+                if (data.online) {
+                    dot.className = 'status-dot online';
+                    text.textContent = 'Сервер онлайн';
+                } else {
+                    dot.className = 'status-dot offline';
+                    text.textContent = 'Сервер офлайн';
+                }
+            } catch (e) {
+                dot.className = 'status-dot offline';
+                text.textContent = 'Сервер офлайн';
+            }
+        }
+        setInterval(updateServerStatus, 30000);
+        updateServerStatus();
+    </script>
 </body>
 </html>
