@@ -334,10 +334,10 @@ def manual_extend(request, user_id):
             return redirect('manage_user', user_id=user.id)
 
         for profile in user.profiles.all():
-            if profile.is_subscription_active():
-                new_expiry = profile.subscription_expiry + timedelta(days=days)
-            else:
+            if profile.subscription_expiry is None or profile.subscription_expiry < timezone.now():
                 new_expiry = timezone.now() + timedelta(days=days)
+            else:
+                new_expiry = profile.subscription_expiry + timedelta(days=days)
             profile.subscription_expiry = new_expiry
             profile.save()
             # Синхронизация с панелью

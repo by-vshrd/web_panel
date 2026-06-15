@@ -64,7 +64,6 @@ class Command(BaseCommand):
             self.stdout.write('Нет новых транзакций.')
             return
 
-        # Один экземпляр клиента для всех операций
         try:
             xui = XUIClient()
         except Exception as e:
@@ -116,14 +115,14 @@ class Command(BaseCommand):
                 self.stdout.write(f'Продлеваю на {days} дней…')
                 for profile in user.profiles.all():
                     old = profile.subscription_expiry
-                    if profile.is_subscription_active():
-                        new_expiry = old + timedelta(days=days)
-                    else:
+                    # Если безлимит (None) или истекла – начинаем с текущей даты
+                    if old is None or old < timezone.now():
                         new_expiry = timezone.now() + timedelta(days=days)
+                    else:
+                        new_expiry = old + timedelta(days=days)
                     profile.subscription_expiry = new_expiry
                     profile.save()
 
-                    # Синхронизация с панелью 3X-UI
                     try:
                         xui.update_client(
                             email=profile.vpn_email,
