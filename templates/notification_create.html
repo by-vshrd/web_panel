@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Новое уведомление{% endblock %}
+{% block content %}
+<h2>Создать уведомление</h2>
+<div class="card">
+    <form method="post">
+        {% csrf_token %}
+        <label>Тип:</label>
+        <select name="level" style="padding:0.5rem; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); margin-bottom:1rem; width:100%;">
+            <option value="info">ℹ️ Информация</option>
+            <option value="success">✅ Успех</option>
+            <option value="warning">⚠️ Предупреждение</option>
+            <option value="error">❌ Ошибка</option>
+        </select>
+        <label>Текст уведомления:</label>
+        <textarea name="text" rows="3" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:0.8rem; color:var(--text); font-family:inherit;" placeholder="Введите текст..."></textarea>
+        <button type="submit" class="btn" style="margin-top:1rem;">Создать</button>
+    </form>
+</div>
+{% endblock %}

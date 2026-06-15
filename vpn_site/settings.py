@@ -39,7 +39,8 @@ TEMPLATES = [
     'django.template.context_processors.request',
     'django.contrib.auth.context_processors.auth',
     'django.contrib.messages.context_processors.messages',
-    'vpn_site.context_processors.extra_settings',   # <-- только эта кастомная строка
+    'vpn_site.context_processors.extra_settings',
+    'vpn_site.context_processors.site_settings',
 ],
         },
     },

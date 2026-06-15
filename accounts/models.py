@@ -39,9 +39,13 @@ class Profile(models.Model):
 
 
 class AdminSettings(models.Model):
-    """Синглтон‑настройки по умолчанию (одна запись)."""
     default_days = models.IntegerField(default=30)
     default_traffic_gb = models.IntegerField(default=0)
+    footer_text = models.CharField(
+        max_length=200,
+        default='BETA-build v0.2 by V.',
+        verbose_name='Текст в футере'
+    )
 
     def save(self, *args, **kwargs):
         self.pk = 1
@@ -61,3 +65,24 @@ class Donation(models.Model):
     processed = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class Notification(models.Model):
+    LEVEL_CHOICES = [
+        ('info', 'Информация'),
+        ('success', 'Успех'),
+        ('warning', 'Предупреждение'),
+        ('error', 'Ошибка'),
+    ]
+
+    text = models.TextField(verbose_name='Текст уведомления')
+    level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='info', verbose_name='Тип')
+    is_active = models.BooleanField(default=True, verbose_name='Активно')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Уведомление'
+        verbose_name_plural = 'Уведомления'
+
+    def __str__(self):
+        return f'{self.get_level_display()}: {self.text[:50]}'

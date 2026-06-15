@@ -48,8 +48,9 @@
     </div>
 
     {% if profile.traffic %}
-    <div style="margin-top: 0.8rem;">
-        <div class="stat-label">Трафик</div>
+<div style="margin-top: 0.8rem;">
+    <div class="stat-label">Трафик</div>
+    <div class="responsive-table">
         <table>
             <tr><td>▲ Отправлено</td><td>{{ profile.traffic.upload|filesizeformat }}</td></tr>
             <tr><td>▼ Получено</td><td>{{ profile.traffic.download|filesizeformat }}</td></tr>
@@ -59,7 +60,8 @@
             </tr>
         </table>
     </div>
-    {% endif %}
+</div>
+{% endif %}
 
     <div style="text-align: center; margin-top: 1rem;">
         <a href="{% url 'qr_code' protocol=profile.protocol %}" class="btn" style="margin-right: 0.5rem;">📱 QR‑код</a>

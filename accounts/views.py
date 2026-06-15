@@ -441,3 +441,51 @@ def payment_page(request):
         'transactions': transactions,
     }
     return render(request, 'payment.html', context)
+
+@staff_member_required
+def admin_settings(request):
+    settings_obj = AdminSettings.load()
+    if request.method == 'POST':
+        settings_obj.default_days = int(request.POST.get('default_days', 30))
+        settings_obj.default_traffic_gb = int(request.POST.get('default_traffic_gb', 0))
+        settings_obj.footer_text = request.POST.get('footer_text', '').strip()
+        settings_obj.save()
+        return redirect('admin_settings')
+
+    return render(request, 'admin_settings.html', {'settings': settings_obj})
+
+@staff_member_required
+def notifications_list(request):
+    notifications = Notification.objects.all().order_by('-created_at')
+    return render(request, 'notifications_list.html', {'notifications': notifications})
+
+@staff_member_required
+def notification_create(request):
+    if request.method == 'POST':
+        text = request.POST.get('text', '').strip()
+        level = request.POST.get('level', 'info')
+        if text:
+            Notification.objects.create(text=text, level=level)
+            messages.success(request, 'Уведомление создано.')
+            return redirect('notifications_list')
+    return render(request, 'notification_create.html')
+
+@staff_member_required
+def notification_delete(request, notification_id):
+    notif = get_object_or_404(Notification, pk=notification_id)
+    if request.method == 'POST':
+        notif.delete()
+        messages.success(request, 'Уведомление удалено.')
+        return redirect('notifications_list')
+    return render(request, 'confirm_delete.html', {'object': notif, 'type': 'уведомление'})
+
+@staff_member_required
+def notification_toggle(request, notification_id):
+    notif = get_object_or_404(Notification, pk=notification_id)
+    if request.method == 'POST':
+        notif.is_active = not notif.is_active
+        notif.save()
+        status = 'активировано' if notif.is_active else 'деактивировано'
+        messages.success(request, f'Уведомление {status}.')
+        return redirect('notifications_list')
+    return HttpResponse(status=405)

@@ -33,4 +33,10 @@ urlpatterns = [
 
     #страница оплаты
     path('payment/', views.payment_page, name='payment_page'),
+
+    #уведомления
+    path('notifications/', views.notifications_list, name='notifications_list'),
+    path('notifications/create/', views.notification_create, name='notification_create'),
+    path('notifications/delete/<int:notification_id>/', views.notification_delete, name='notification_delete'),
+    path('notifications/toggle/<int:notification_id>/', views.notification_toggle, name='notification_toggle'),
 ]

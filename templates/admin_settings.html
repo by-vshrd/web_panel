@@ -9,6 +9,12 @@
         <input type="number" name="default_days" value="{{ settings.default_days }}" min="1">
         <label>Лимит трафика (ГБ, 0 – безлимит):</label>
         <input type="number" name="default_traffic_gb" value="{{ settings.default_traffic_gb }}" min="0">
+
+        <hr style="margin: 1.5rem 0;">
+
+        <label>Текст в футере сайта:</label>
+        <input type="text" name="footer_text" value="{{ settings.footer_text }}" maxlength="200" style="margin-bottom:1rem;">
+
         <button type="submit" class="btn">Сохранить</button>
     </form>
 </div>

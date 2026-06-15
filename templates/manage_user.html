@@ -22,14 +22,14 @@
     <input type="checkbox" name="enable" {% if profile.is_subscription_active %}checked{% endif %}>
     <label>Лимит трафика (ГБ, 0 – безлимит):</label>
     <input type="number" name="total_gb" value="{{ profile.total_gb }}" min="0">
-    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-      <button type="submit" class="btn">Сохранить</button>
-      <a href="{% url 'delete_profile' profile.id %}" class="btn btn-outline" style="color:var(--danger);">Удалить</a>
-      <form method="post" action="{% url 'sync_profile_sub_id' profile.id %}" style="display:inline;">
+    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <button type="submit" class="btn">Сохранить</button>
+    <a href="{% url 'delete_profile' profile.id %}" class="btn btn-outline" style="color:var(--danger);">Удалить</a>
+    <form method="post" action="{% url 'sync_profile_sub_id' profile.id %}" style="display:inline;">
         {% csrf_token %}
         <button type="submit" class="btn btn-outline">Синхронизировать ID</button>
-      </form>
-    </div>
+    </form>
+</div>
   </form>
 </div>
 {% endfor %}

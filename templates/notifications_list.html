@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Уведомления{% endblock %}
+{% block content %}
+<h2>Управление уведомлениями</h2>
+<a href="{% url 'notification_create' %}" class="btn" style="margin-bottom:1rem;">Создать уведомление</a>
+
+{% for notif in notifications %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="stat-label">{{ notif.get_level_display }}</span>
+        <span style="font-size:0.8rem; color: var(--muted);">{{ notif.created_at|date:"d.m.Y H:i" }}</span>
+    </div>
+    <p style="margin-top:0.5rem;">{{ notif.text }}</p>
+    <div style="margin-top:0.8rem; display: flex; gap:0.5rem; flex-wrap:wrap;">
+        <form method="post" action="{% url 'notification_toggle' notif.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline">
+                {% if notif.is_active %}Деактивировать{% else %}Активировать{% endif %}
+            </button>
+        </form>
+        <a href="{% url 'notification_delete' notif.id %}" class="btn btn-outline" style="color:var(--danger);">Удалить</a>
+    </div>
+</div>
+{% empty %}
+<p>Уведомлений пока нет.</p>
+{% endfor %}
+{% endblock %}

@@ -5,7 +5,7 @@
 
 <div class="card" style="text-align: center;">
     <h3>Ваш код активации</h3>
-    <div style="font-size: 1.8rem; font-family: monospace; margin: 1rem 0;" id="activation-code">
+    <div style="font-size: 1.8rem; font-family: monospace; margin: 1rem 0; word-break: break-all;" id="activation-code">
         {{ profile.activation_code }}
     </div>
     <p style="color: var(--muted); margin-bottom: 1rem;">
@@ -17,36 +17,69 @@
 <div class="card">
     <h3>История транзакций</h3>
     {% if transactions %}
-    <table style="width:100%; border-collapse: collapse;">
-        <thead>
-            <tr>
-                <th style="text-align:left; padding:0.5rem;">ID</th>
-                <th style="text-align:right; padding:0.5rem;">Сумма</th>
-                <th style="text-align:center; padding:0.5rem;">Статус</th>
-                <th style="text-align:right; padding:0.5rem;">Дата</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tx in transactions %}
-            <tr style="border-bottom: 1px solid var(--border);">
-                <td style="padding:0.5rem;">{{ tx.donation_id|truncatechars:12 }}</td>
-                <td style="text-align:right; padding:0.5rem;">{{ tx.amount }} {{ tx.currency }}</td>
-                <td style="text-align:center; padding:0.5rem;">
-                    {% if tx.processed %}
-                        <span style="color: var(--success);">✅ Обработан</span>
-                    {% else %}
-                        <span style="color: var(--danger);">❌ Ожидает</span>
-                    {% endif %}
-                </td>
-                <td style="text-align:right; padding:0.5rem;">{{ tx.created_at|date:"d.m.Y H:i" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="responsive-table">
+        <table style="width:100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align:left; padding:0.5rem;">ID</th>
+                    <th style="text-align:right; padding:0.5rem;">Сумма</th>
+                    <th style="text-align:center; padding:0.5rem;">Статус</th>
+                    <th style="text-align:right; padding:0.5rem;">Дата</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions %}
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding:0.5rem;">{{ tx.donation_id|truncatechars:12 }}</td>
+                    <td style="text-align:right; padding:0.5rem;">{{ tx.amount }} {{ tx.currency }}</td>
+                    <td style="text-align:center; padding:0.5rem;">
+                        {% if tx.processed %}
+                            <span style="color: var(--success);">✅ Обработан</span>
+                        {% else %}
+                            <span style="color: var(--danger);">❌ Ожидает</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right; padding:0.5rem;">{{ tx.created_at|date:"d.m.Y H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
     <p style="color: var(--muted);">Транзакций пока нет.</p>
     {% endif %}
 </div>
+
+<style>
+    /* Дополнительные стили для мобильной адаптации */
+    @media (max-width: 600px) {
+        .card {
+            padding: 1rem;
+        }
+        h2, h3 {
+            font-size: 1.2rem;
+        }
+        #activation-code {
+            font-size: 1.4rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+        .responsive-table {
+            overflow-x: auto;
+            display: block;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            min-width: 500px; /* Минимальная ширина для читаемости */
+        }
+        th, td {
+            padding: 0.4rem;
+        }
+    }
+</style>
 
 <script>
     // Автообновление каждые 10 секунд для отслеживания новых платежей

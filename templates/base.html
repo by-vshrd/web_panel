@@ -56,6 +56,13 @@
             font-size: 0.9rem;
         }
         .navbar nav a:hover { color: var(--accent); }
+
+        /* Гамбургер (скрыт на десктопе) */
+        .hamburger { display: none; flex-direction: column; cursor: pointer; gap: 5px; }
+        .hamburger span { width: 25px; height: 3px; background: var(--text); border-radius: 2px; transition: 0.3s; }
+        #menu-toggle { display: none; }
+        #menu-toggle:checked + .hamburger + .nav-menu { display: flex; }
+
         .btn {
             display: inline-block;
             background: var(--accent);
@@ -76,6 +83,7 @@
             color: var(--text) !important;
         }
         .btn-outline:hover { border-color: var(--accent); color: var(--accent) !important; background: transparent; }
+
         .container {
             max-width: 720px;
             width: 100%;
@@ -110,10 +118,7 @@
             letter-spacing: 0.5px;
         }
         table { width: 100%; border-collapse: collapse; }
-        td {
-            padding: 0.5rem 0;
-            border-bottom: 1px solid var(--border);
-        }
+        td { padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
         td:last-child { text-align: right; }
         label { display: block; margin-bottom: 0.3rem; color: var(--text); font-weight: 500; }
         input[type="text"], input[type="email"], input[type="password"] {
@@ -139,20 +144,27 @@
             opacity: 0.6;
             padding: 1rem 0;
         }
-        /* Индикатор статуса в навбаре */
-        .navbar-status {
+        .status-indicator {
             display: flex;
             align-items: center;
-            gap: 0.4rem;
-            font-size: 0.85rem;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            font-size: 0.95rem;
+            font-weight: 500;
             color: var(--text);
-            margin-left: 1rem;
+            transition: border-color 0.3s, background 0.3s;
         }
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             background: gray;
+            box-shadow: 0 0 8px currentColor;
             animation: pulse 2s infinite;
         }
         .status-dot.online { background: var(--success); }
@@ -162,16 +174,82 @@
             50% { opacity: 0.5; transform: scale(1.2); }
             100% { opacity: 1; transform: scale(1); }
         }
+
+        /* ===== Адаптивность ===== */
+        @media (max-width: 600px) {
+            .navbar {
+                padding: 0 1rem;
+            }
+            .navbar nav {
+                display: none;                     /* обычное меню скрыто */
+            }
+            .hamburger {
+                display: flex;                    /* показываем кнопку */
+            }
+            #menu-toggle:checked + .hamburger + .nav-menu {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 56px;
+                left: 0;
+                right: 0;
+                background: var(--card);
+                border-bottom: 1px solid var(--border);
+                padding: 1rem;
+                gap: 0.8rem;
+                z-index: 20;
+            }
+            .container {
+                padding: 0 1rem;
+                margin: 1rem auto;
+            }
+            .card {
+                padding: 1rem;
+            }
+            h2, h1 {
+                font-size: 1.2rem;
+            }
+            .stat {
+                font-size: 1.5rem;
+            }
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+            /* Таблицы – горизонтальный скролл при необходимости */
+            .responsive-table {
+                overflow-x: auto;
+                display: block;
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 <body>
+ {% if active_notifications %}
+    <div id="global-notifications" style="position: sticky; top: 56px; z-index: 5;">
+        {% for notif in active_notifications %}
+        <div class="global-notif" data-notif-id="{{ notif.id }}" style="background: {% if notif.level == 'error' %}var(--danger){% elif notif.level == 'warning' %}#ffc107{% elif notif.level == 'success' %}var(--success){% else %}var(--accent){% endif %}; color: {% if notif.level == 'warning' %}#000{% else %}#fff{% endif %}; padding: 0.8rem 1.5rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; border-bottom: 1px solid var(--border);">
+            <span>{{ notif.text }}</span>
+            <span class="close-notif" style="cursor:pointer; font-size:1.2rem; line-height:1; margin-left:1rem;" data-notif-id="{{ notif.id }}">&times;</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     <div class="navbar">
         <a href="/" class="logo">🔒 VPN</a>
-        <nav>
+        <!-- Гамбургер (виден на мобильных) -->
+        <label class="hamburger" for="menu-toggle">
+            <span></span><span></span><span></span>
+        </label>
+        <input type="checkbox" id="menu-toggle" style="display:none;">
+        <nav class="nav-menu">
             {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}">Кабинет</a>
                 {% if user.is_staff %}
                     <a href="{% url 'admin_dashboard' %}">Админка</a>
+                    <a href="{% url 'admin_settings' %}">Настройки</a>
+                    <a href="{% url 'notifications_list' %}">Уведомления</a>
                     <a href="https://78.17.4.72:32894/login/panel/" target="_blank">3X-UI</a>
                 {% endif %}
                 <a href="{% url 'faq' %}">FAQ</a>
@@ -181,13 +259,13 @@
                 <a href="{% url 'login' %}">Войти</a>
                 <a href="{% url 'signup' %}" class="btn">Регистрация</a>
             {% endif %}
-            <!-- Статус сервера -->
             <span class="navbar-status" id="navbar-status">
                 <span id="status-dot" class="status-dot"></span>
                 <span id="status-text">Проверка...</span>
             </span>
         </nav>
     </div>
+
     <div class="container">
         {% if messages %}
             {% for message in messages %}
@@ -197,7 +275,7 @@
             {% endfor %}
         {% endif %}
         {% block content %}{% endblock %}
-        <div class="footer-note">BETA-build v0.7 by V.</div>
+        <div class="footer-note">{{ footer_text }}</div>
     </div>
 
     <script>
@@ -222,5 +300,32 @@
         setInterval(updateServerStatus, 30000);
         updateServerStatus();
     </script>
+<script>
+    document.querySelectorAll('.close-notif').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const notifId = this.getAttribute('data-notif-id');
+            // Скрываем уведомление
+            const notifDiv = document.querySelector(`.global-notif[data-notif-id="${notifId}"]`);
+            if (notifDiv) notifDiv.style.display = 'none';
+            // Сохраняем ID в localStorage, чтобы не показывать снова
+            let closed = JSON.parse(localStorage.getItem('closed_notifications') || '[]');
+            if (!closed.includes(notifId)) {
+                closed.push(notifId);
+                localStorage.setItem('closed_notifications', JSON.stringify(closed));
+            }
+        });
+    });
+
+    // При загрузке скрываем уведомления, которые уже были закрыты
+    (function() {
+        let closed = JSON.parse(localStorage.getItem('closed_notifications') || '[]');
+        document.querySelectorAll('.global-notif').forEach(div => {
+            const id = div.getAttribute('data-notif-id');
+            if (closed.includes(id)) {
+                div.style.display = 'none';
+            }
+        });
+    })();
+</script>
 </body>
 </html>
