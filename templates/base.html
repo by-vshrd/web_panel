@@ -57,7 +57,6 @@
         }
         .navbar nav a:hover { color: var(--accent); }
 
-        /* Гамбургер (скрыт на десктопе) */
         .hamburger { display: none; flex-direction: column; cursor: pointer; gap: 5px; }
         .hamburger span { width: 25px; height: 3px; background: var(--text); border-radius: 2px; transition: 0.3s; }
         #menu-toggle { display: none; }
@@ -144,20 +143,15 @@
             opacity: 0.6;
             padding: 1rem 0;
         }
-        .status-indicator {
+
+        /* Статус сервера */
+        .navbar-status {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin: 1.5rem 0;
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
-            font-size: 0.95rem;
-            font-weight: 500;
+            gap: 0.4rem;
+            font-size: 0.85rem;
             color: var(--text);
-            transition: border-color 0.3s, background 0.3s;
+            margin-left: auto;
         }
         .status-dot {
             width: 10px;
@@ -175,17 +169,36 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* ===== Адаптивность ===== */
+        /* Уведомления — теперь строго под навбаром */
+        #global-notifications {
+            position: sticky;
+            top: 56px;               /* высота навбара */
+            z-index: 5;
+        }
+        .global-notif {
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            border-bottom: 1px solid var(--border);
+            color: #fff;
+        }
+        .global-notif .close-notif {
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+            margin-left: 1rem;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .global-notif .close-notif:hover { opacity: 1; }
+
+        /* Адаптивность */
         @media (max-width: 600px) {
-            .navbar {
-                padding: 0 1rem;
-            }
-            .navbar nav {
-                display: none;                     /* обычное меню скрыто */
-            }
-            .hamburger {
-                display: flex;                    /* показываем кнопку */
-            }
+            .navbar { padding: 0 1rem; }
+            .navbar nav { display: none; }
+            .hamburger { display: flex; }
             #menu-toggle:checked + .hamburger + .nav-menu {
                 display: flex;
                 flex-direction: column;
@@ -199,46 +212,35 @@
                 gap: 0.8rem;
                 z-index: 20;
             }
-            .container {
-                padding: 0 1rem;
-                margin: 1rem auto;
-            }
-            .card {
-                padding: 1rem;
-            }
-            h2, h1 {
-                font-size: 1.2rem;
-            }
-            .stat {
-                font-size: 1.5rem;
-            }
-            .btn {
-                padding: 0.5rem 1rem;
-                font-size: 0.85rem;
-            }
-            /* Таблицы – горизонтальный скролл при необходимости */
+            .container { padding: 0 1rem; margin: 1rem auto; }
+            .card { padding: 1rem; }
+            h2, h1 { font-size: 1.2rem; }
+            .stat { font-size: 1.5rem; }
+            .btn { padding: 0.5rem 1rem; font-size: 0.85rem; }
             .responsive-table {
                 overflow-x: auto;
                 display: block;
                 white-space: nowrap;
             }
+            .navbar-status { margin-left: 0; }
         }
     </style>
 </head>
 <body>
- {% if active_notifications %}
-    <div id="global-notifications" style="position: sticky; top: 56px; z-index: 5;">
+    <!-- Глобальные уведомления (прилипают под навбаром) -->
+    {% if active_notifications %}
+    <div id="global-notifications">
         {% for notif in active_notifications %}
-        <div class="global-notif" data-notif-id="{{ notif.id }}" style="background: {% if notif.level == 'error' %}var(--danger){% elif notif.level == 'warning' %}#ffc107{% elif notif.level == 'success' %}var(--success){% else %}var(--accent){% endif %}; color: {% if notif.level == 'warning' %}#000{% else %}#fff{% endif %}; padding: 0.8rem 1.5rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; border-bottom: 1px solid var(--border);">
+        <div class="global-notif" data-notif-id="{{ notif.id }}" style="background: {% if notif.level == 'error' %}var(--danger){% elif notif.level == 'warning' %}#ffc107{% elif notif.level == 'success' %}var(--success){% else %}var(--accent){% endif %}; {% if notif.level == 'warning' %}color:#000;{% endif %}">
             <span>{{ notif.text }}</span>
-            <span class="close-notif" style="cursor:pointer; font-size:1.2rem; line-height:1; margin-left:1rem;" data-notif-id="{{ notif.id }}">&times;</span>
+            <span class="close-notif" data-notif-id="{{ notif.id }}">&times;</span>
         </div>
         {% endfor %}
     </div>
     {% endif %}
+
     <div class="navbar">
         <a href="/" class="logo">🔒 VPN</a>
-        <!-- Гамбургер (виден на мобильных) -->
         <label class="hamburger" for="menu-toggle">
             <span></span><span></span><span></span>
         </label>
@@ -299,33 +301,29 @@
         }
         setInterval(updateServerStatus, 30000);
         updateServerStatus();
-    </script>
-<script>
-    document.querySelectorAll('.close-notif').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const notifId = this.getAttribute('data-notif-id');
-            // Скрываем уведомление
-            const notifDiv = document.querySelector(`.global-notif[data-notif-id="${notifId}"]`);
-            if (notifDiv) notifDiv.style.display = 'none';
-            // Сохраняем ID в localStorage, чтобы не показывать снова
-            let closed = JSON.parse(localStorage.getItem('closed_notifications') || '[]');
-            if (!closed.includes(notifId)) {
-                closed.push(notifId);
-                localStorage.setItem('closed_notifications', JSON.stringify(closed));
-            }
-        });
-    });
 
-    // При загрузке скрываем уведомления, которые уже были закрыты
-    (function() {
-        let closed = JSON.parse(localStorage.getItem('closed_notifications') || '[]');
-        document.querySelectorAll('.global-notif').forEach(div => {
-            const id = div.getAttribute('data-notif-id');
-            if (closed.includes(id)) {
-                div.style.display = 'none';
-            }
+        // Закрытие уведомлений
+        document.querySelectorAll('.close-notif').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const notifId = this.getAttribute('data-notif-id');
+                const notifDiv = document.querySelector(`.global-notif[data-notif-id="${notifId}"]`);
+                if (notifDiv) notifDiv.style.display = 'none';
+                let closed = JSON.parse(localStorage.getItem('closed_notifications') || '[]');
+                if (!closed.includes(notifId)) {
+                    closed.push(notifId);
+                    localStorage.setItem('closed_notifications', JSON.stringify(closed));
+                }
+            });
         });
-    })();
-</script>
+        (function() {
+            let closed = JSON.parse(localStorage.getItem('closed_notifications') || '[]');
+            document.querySelectorAll('.global-notif').forEach(div => {
+                const id = div.getAttribute('data-notif-id');
+                if (closed.includes(id)) {
+                    div.style.display = 'none';
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
