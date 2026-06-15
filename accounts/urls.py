@@ -30,4 +30,7 @@ urlpatterns = [
 
     # API-опрос донатов (защищённый эндпоинт)
     path('fetch-donations/', views.fetch_donations_api, name='fetch_donations_api'),
+
+    #страница оплаты
+    path('payment/', views.payment_page, name='payment_page'),
 ]

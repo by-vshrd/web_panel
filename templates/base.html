@@ -172,7 +172,6 @@
                 <a href="{% url 'dashboard' %}">Кабинет</a>
                 {% if user.is_staff %}
                     <a href="{% url 'admin_dashboard' %}">Админка</a>
-                    <a href="{% url 'admin_settings' %}">Настройки</a>
                     <a href="https://78.17.4.72:32894/login/panel/" target="_blank">3X-UI</a>
                 {% endif %}
                 <a href="{% url 'faq' %}">FAQ</a>
@@ -198,7 +197,7 @@
             {% endfor %}
         {% endif %}
         {% block content %}{% endblock %}
-        <div class="footer-note">BETA-build v0.2 by V.</div>
+        <div class="footer-note">BETA-build v0.7 by V.</div>
     </div>
 
     <script>

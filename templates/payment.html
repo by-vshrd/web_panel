@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Пополнение подписки{% endblock %}
+{% block content %}
+<h2 style="color: var(--text-heading); margin-bottom: 1rem;">Пополнение подписки</h2>
+
+<div class="card" style="text-align: center;">
+    <h3>Ваш код активации</h3>
+    <div style="font-size: 1.8rem; font-family: monospace; margin: 1rem 0;" id="activation-code">
+        {{ profile.activation_code }}
+    </div>
+    <p style="color: var(--muted); margin-bottom: 1rem;">
+        Совершите донат через DonatePay и укажите этот код в комментарии к платежу.
+    </p>
+    <a href="https://donatepay.ru/don/1505821" target="_blank" class="btn">Перейти к донату</a>
+</div>
+
+<div class="card">
+    <h3>История транзакций</h3>
+    {% if transactions %}
+    <table style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                <th style="text-align:left; padding:0.5rem;">ID</th>
+                <th style="text-align:right; padding:0.5rem;">Сумма</th>
+                <th style="text-align:center; padding:0.5rem;">Статус</th>
+                <th style="text-align:right; padding:0.5rem;">Дата</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding:0.5rem;">{{ tx.donation_id|truncatechars:12 }}</td>
+                <td style="text-align:right; padding:0.5rem;">{{ tx.amount }} {{ tx.currency }}</td>
+                <td style="text-align:center; padding:0.5rem;">
+                    {% if tx.processed %}
+                        <span style="color: var(--success);">✅ Обработан</span>
+                    {% else %}
+                        <span style="color: var(--danger);">❌ Ожидает</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right; padding:0.5rem;">{{ tx.created_at|date:"d.m.Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: var(--muted);">Транзакций пока нет.</p>
+    {% endif %}
+</div>
+
+<script>
+    // Автообновление каждые 10 секунд для отслеживания новых платежей
+    setTimeout(function() {
+        location.reload();
+    }, 10000);
+</script>
+{% endblock %}

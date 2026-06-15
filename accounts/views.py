@@ -416,3 +416,28 @@ def fetch_donations_api(request):
 
 def faq(request):
     return render(request, 'faq.html')
+
+@login_required
+def payment_page(request):
+    user = request.user
+    profile = user.profiles.first()
+    if not profile:
+        return HttpResponse('Сначала создайте VPN‑профиль', status=400)
+
+    # Генерируем код активации, если его ещё нет
+    if not profile.activation_code:
+        import secrets
+        code = f"VSH-{user.username[:4].upper()}-{secrets.token_hex(4)}"
+        while Profile.objects.filter(activation_code=code).exists():
+            code = f"VSH-{user.username[:4].upper()}-{secrets.token_hex(4)}"
+        profile.activation_code = code
+        profile.save()
+
+    # Последние 20 транзакций пользователя
+    transactions = Donation.objects.filter(user=user).order_by('-created_at')[:20]
+
+    context = {
+        'profile': profile,
+        'transactions': transactions,
+    }
+    return render(request, 'payment.html', context)
