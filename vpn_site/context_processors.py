@@ -1,3 +1,5 @@
+from accounts.models import Notification
+
 from django.conf import settings
 
 def extra_settings(request):
