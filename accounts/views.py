@@ -413,3 +413,6 @@ def fetch_donations_api(request):
         return HttpResponse(f'Error: {traceback.format_exc()}', status=500, content_type='text/plain')
 
     return HttpResponse('OK')
+
+def faq(request):
+    return render(request, 'faq.html')
