@@ -93,15 +93,19 @@ def dashboard(request):
         else:
             profile.traffic = None
 
-    existing_protocols = profiles.values_list('protocol', flat=True)
-    available_protocols = [p for p in ['hysteria', 'vless'] if p not in existing_protocols]
+    # Какие протоколы можно ещё создать (до двух каждого)
+    from collections import Counter
+    protocol_counts = Counter(profiles.values_list('protocol', flat=True))
+    available_protocols = []
+    for proto in ['hysteria', 'vless']:
+        if protocol_counts.get(proto, 0) < 2:      # <-- теперь лимит 2
+            available_protocols.append(proto)
 
     context = {
         'profiles': profiles,
         'available_protocols': available_protocols,
     }
     return render(request, 'dashboard.html', context)
-
 
 @login_required
 @require_POST
@@ -110,13 +114,13 @@ def create_profile(request):
     if protocol not in ('hysteria', 'vless'):
         return HttpResponse('Неверный протокол', status=400)
 
-    # Проверяем количество существующих профилей этого протокола
+    # Считаем, сколько профилей этого протокола уже есть
     existing_count = Profile.objects.filter(user=request.user, protocol=protocol).count()
     if existing_count >= 2:
         return HttpResponse(f'Достигнут лимит профилей для протокола {protocol} (максимум 2)', status=400)
 
     inbound_id = settings.XUI_INBOUND_ID_HYSTERIA if protocol == 'hysteria' else settings.XUI_INBOUND_ID_VLESS
-    # Генерируем уникальный email, добавляя порядковый номер
+    # Генерируем уникальный email: user_protocolN@vpn.local (N = порядковый номер)
     email = f'{request.user.username}_{protocol}{existing_count+1}@vpn.local'
     vpn_uuid = uuid4()
 
