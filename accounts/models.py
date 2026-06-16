@@ -21,8 +21,6 @@ class Profile(models.Model):
     total_gb = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        unique_together = ('user', 'protocol')
 
     def is_subscription_active(self):
         if self.subscription_expiry is None:
