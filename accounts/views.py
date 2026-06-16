@@ -148,11 +148,8 @@ def create_profile(request):
     return redirect('dashboard')
 
 @login_required
-def qr_code(request, protocol):
-    try:
-        profile = Profile.objects.get(user=request.user, protocol=protocol)
-    except Profile.DoesNotExist:
-        return HttpResponse('Профиль не найден', status=404)
+def qr_code(request, profile_id):
+    profile = get_object_or_404(Profile, pk=profile_id, user=request.user)
 
     if not profile.is_subscription_active():
         return HttpResponse('Подписка истекла', status=403)
@@ -165,11 +162,8 @@ def qr_code(request, protocol):
 
 
 @login_required
-def subscription_link(request, protocol):
-    try:
-        profile = Profile.objects.get(user=request.user, protocol=protocol)
-    except Profile.DoesNotExist:
-        return HttpResponse('Профиль не найден', status=404)
+def subscription_link(request, profile_id):
+    profile = get_object_or_404(Profile, pk=profile_id, user=request.user)
 
     if not profile.is_subscription_active():
         return HttpResponse('Подписка истекла', status=403)

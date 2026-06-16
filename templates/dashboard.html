@@ -64,9 +64,9 @@
 {% endif %}
 
     <div style="text-align: center; margin-top: 1rem;">
-        <a href="{% url 'qr_code' protocol=profile.protocol %}" class="btn" style="margin-right: 0.5rem;">📱 QR‑код</a>
-        <a href="{% url 'subscription_link' protocol=profile.protocol %}" class="btn btn-outline" target="_blank">🔗 Ссылка</a>
-    </div>
+    <a href="{% url 'qr_code' profile.id %}" class="btn" style="margin-right: 0.5rem;">📱 QR‑код</a>
+    <a href="{% url 'subscription_link' profile.id %}" class="btn btn-outline" target="_blank">🔗 Ссылка</a>
+</div>
 </div>
 {% empty %}
     {% if not available_protocols %}

@@ -12,8 +12,8 @@ urlpatterns = [
     # Личный кабинет
     path('dashboard/', views.dashboard, name='dashboard'),
     path('create-profile/', views.create_profile, name='create_profile'),
-    path('qr/<str:protocol>/', views.qr_code, name='qr_code'),
-    path('link/<str:protocol>/', views.subscription_link, name='subscription_link'),
+    path('qr/<int:profile_id>/', views.qr_code, name='qr_code'),
+    path('link/<int:profile_id>/', views.subscription_link, name='subscription_link'),
     path('activation-code/', views.get_activation_code, name='activation_code'),
 
     # Статус сервера
