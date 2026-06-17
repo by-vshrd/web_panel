@@ -57,6 +57,7 @@
         }
         .navbar nav a:hover { color: var(--accent); }
 
+        /* Гамбургер (скрыт на десктопе) */
         .hamburger { display: none; flex-direction: column; cursor: pointer; gap: 5px; }
         .hamburger span { width: 25px; height: 3px; background: var(--text); border-radius: 2px; transition: 0.3s; }
         #menu-toggle { display: none; }
@@ -169,7 +170,7 @@
             100% { opacity: 1; transform: scale(1); }
         }
 
-        /* Уведомления – обычный блок перед навбаром, не липкий */
+        /* Уведомления */
         #global-notifications {
             z-index: 5;
         }
@@ -192,11 +193,17 @@
         }
         .global-notif .close-notif:hover { opacity: 1; }
 
-        /* Адаптивность */
+        /* ===== Адаптивность ===== */
         @media (max-width: 600px) {
-            .navbar { padding: 0 1rem; }
-            .navbar nav { display: none; }
-            .hamburger { display: flex; }
+            .navbar {
+                padding: 0 1rem;
+            }
+            .navbar nav {
+                display: none;                     /* обычное меню скрыто */
+            }
+            .hamburger {
+                display: flex;                    /* показываем кнопку */
+            }
             #menu-toggle:checked + .hamburger + .nav-menu {
                 display: flex;
                 flex-direction: column;
@@ -210,22 +217,36 @@
                 gap: 0.8rem;
                 z-index: 20;
             }
-            .container { padding: 0 1rem; margin: 1rem auto; }
-            .card { padding: 1rem; }
-            h2, h1 { font-size: 1.2rem; }
-            .stat { font-size: 1.5rem; }
-            .btn { padding: 0.5rem 1rem; font-size: 0.85rem; }
+            .container {
+                padding: 0 1rem;
+                margin: 1rem auto;
+            }
+            .card {
+                padding: 1rem;
+            }
+            h2, h1 {
+                font-size: 1.2rem;
+            }
+            .stat {
+                font-size: 1.5rem;
+            }
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
             .responsive-table {
                 overflow-x: auto;
                 display: block;
                 white-space: nowrap;
             }
-            .navbar-status { margin-left: 0; }
+            .navbar-status {
+                margin-left: 0;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Глобальные уведомления (просто блок, не липкий) -->
+    <!-- Глобальные уведомления -->
     {% if active_notifications %}
     <div id="global-notifications">
         {% for notif in active_notifications %}
@@ -239,10 +260,11 @@
 
     <div class="navbar">
         <a href="/" class="logo">🔒 VPN</a>
+        <!-- Гамбургер (виден на мобильных) -->
         <label class="hamburger" for="menu-toggle">
             <span></span><span></span><span></span>
         </label>
-        <input type="checkbox" id="menu-toggle" style="display:none;">
+        <input type="checkbox" id="menu-toggle">
         <nav class="nav-menu">
             {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}">Кабинет</a>
