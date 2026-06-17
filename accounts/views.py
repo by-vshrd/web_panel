@@ -543,7 +543,6 @@ def approve_payment(request, ticket_id):
     if request.method == 'POST':
         user = ticket.user
         days = 30
-        xui = None
         try:
             xui = XUIClient()
         except Exception as e:
@@ -559,6 +558,7 @@ def approve_payment(request, ticket_id):
                 new_expiry = old + timedelta(days=days)
             profile.subscription_expiry = new_expiry
             profile.save()
+
             try:
                 xui.update_client(
                     email=profile.vpn_email,
@@ -573,6 +573,7 @@ def approve_payment(request, ticket_id):
                 success = False
 
         if success:
+            # Удаляем скриншот после успешного продления
             if ticket.screenshot:
                 ticket.screenshot.delete(save=False)
             ticket.status = 'approved'
@@ -581,6 +582,7 @@ def approve_payment(request, ticket_id):
         else:
             messages.warning(request, 'Подписка продлена локально, но были ошибки синхронизации с панелью.')
         return redirect('admin_payments')
+
     return render(request, 'confirm_approve.html', {'ticket': ticket})
 
 @staff_member_required
@@ -594,6 +596,9 @@ def reject_payment(request, ticket_id):
         ticket.status = 'rejected'
         ticket.rejection_reason = reason
         ticket.save()
+        # Удаляем скриншот после отклонения
+        if ticket.screenshot:
+            ticket.screenshot.delete(save=False)
         messages.success(request, f'Заявка #{ticket.id} отклонена.')
         return redirect('admin_payments')
     return render(request, 'reject_payment.html', {'ticket': ticket})
