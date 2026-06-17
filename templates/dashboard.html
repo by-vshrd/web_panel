@@ -77,29 +77,9 @@
 {% endfor %}
 
 {% if profiles %}
-<div class="card" style="text-align: center;">
-    <h2>Пополнение подписки</h2>
-    <p style="color: var(--muted);">Совершите оплату через DonatePay и укажите ваш персональный код в сообщении.</p>
-    <div style="font-size: 1.5rem; font-family: monospace; margin: 1rem 0;" id="activation-code">
-        Загрузка...
-    </div>
-    <button onclick="fetchCode()" class="btn btn-outline">Показать / обновить код</button>
-    <p style="margin-top: 0.5rem; font-size: 0.85rem;">
-        <a href="{% url 'payment_page' %}" class="btn btn-outline">Пополнить подписку</a>
-    </p>
+<div style="text-align: center; margin-top: 1rem;">
+    <a href="{% url 'payment_page' %}" class="btn">💳 Пополнить подписку</a>
 </div>
-
-<script>
-    async function fetchCode() {
-        const resp = await fetch('/accounts/activation-code/');
-        if (resp.ok) {
-            const code = await resp.text();
-            document.getElementById('activation-code').textContent = code;
-        } else {
-            document.getElementById('activation-code').textContent = 'Ошибка: ' + await resp.text();
-        }
-    }
-    fetchCode();
-</script>
 {% endif %}
+
 {% endblock %}

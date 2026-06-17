@@ -15,9 +15,12 @@
         <label>Текст в футере сайта:</label>
         <input type="text" name="footer_text" value="{{ settings.footer_text }}" maxlength="200" style="margin-bottom:1rem;">
 
-        <label>QR‑код оплаты (URL изображения):</label>
-        <input type="text" name="payment_qr" value="{{ settings.payment_qr }}">
-
+        <label>QR‑код оплаты (загрузите изображение):</label>
+    {% if settings.payment_qr %}
+        <img src="{{ settings.payment_qr.url }}" style="max-width:200px; border-radius:8px; margin-bottom:0.5rem;"><br>
+    {% endif %}
+    <input type="file" name="payment_qr" accept="image/*">
+        
         <label>Ссылка для оплаты:</label>
         <input type="url" name="payment_link" value="{{ settings.payment_link }}">
 

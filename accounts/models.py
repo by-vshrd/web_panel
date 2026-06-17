@@ -44,7 +44,7 @@ class AdminSettings(models.Model):
         default='BETA-build v0.2 by V.',
         verbose_name='Текст в футере'
     )
-    payment_qr = models.TextField(blank=True, verbose_name='QR‑код оплаты (ссылка на изображение)')
+    payment_qr = models.ImageField(upload_to='payment_qr/', blank=True, verbose_name='QR‑код оплаты')
     payment_link = models.URLField(blank=True, verbose_name='Ссылка для оплаты')
 
     def save(self, *args, **kwargs):

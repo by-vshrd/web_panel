@@ -439,7 +439,8 @@ def admin_settings(request):
         settings_obj.default_days = int(request.POST.get('default_days', 30))
         settings_obj.default_traffic_gb = int(request.POST.get('default_traffic_gb', 0))
         settings_obj.footer_text = request.POST.get('footer_text', '').strip()
-        settings_obj.payment_qr = request.POST.get('payment_qr', '').strip()
+        if request.FILES.get('payment_qr'):
+            settings_obj.payment_qr = request.FILES['payment_qr']
         settings_obj.payment_link = request.POST.get('payment_link', '').strip()
         settings_obj.save()
         return redirect('admin_settings')
@@ -582,6 +583,11 @@ def approve_payment(request, ticket_id):
             ticket.is_approved = True
             ticket.save()
             messages.success(request, f'Подписка пользователя {user.username} продлена на {days} дней (панель обновлена).')
+            # Удаляем файл скриншота
+            if ticket.screenshot:
+                ticket.screenshot.delete(save=False)
+            ticket.is_approved = True
+            ticket.save()
         else:
             messages.warning(request, 'Подписка продлена локально, но возникли ошибки синхронизации с панелью. Проверьте логи.')
 
