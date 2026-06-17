@@ -26,6 +26,8 @@ import urllib3
 from .models import Profile, AdminSettings, Notification
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from .models import Profile, AdminSettings, Donation
+from .models import Profile, AdminSettings, Notification, PaymentTicket
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
