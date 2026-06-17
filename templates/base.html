@@ -255,7 +255,6 @@
         <nav class="nav-menu">
             {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}">Кабинет</a>
-                <a href="{% url 'payment_page' %}">Оплата</a>
                 {% if user.is_staff %}
                     <a href="{% url 'admin_dashboard' %}">Админка</a>
                     <a href="{% url 'admin_settings' %}">Настройки</a>
