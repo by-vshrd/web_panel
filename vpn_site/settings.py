@@ -113,3 +113,6 @@ DEFAULT_DAYS_PER_DONATION = int(os.environ.get('DEFAULT_DAYS_PER_DONATION', 30))
 
 CRON_SECRET = os.environ.get('CRON_SECRET', 'dGhpcyBpcyBhbiBleGFtcGxlIG9mIGEgcmFuZG9tIHN0cmluZyB3aXRoIGV4YWN0bHkgMzIgY2hhcmFjdGVycy4')
 DONATEPAY_API_TOKEN = os.environ.get('DONATEPAY_API_TOKEN', 'nzl3wy6n5YbCaOh9nx5WJPPh1FwVrjf5aKQurgaUZdM4plaNs36wjVVW9qyf')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

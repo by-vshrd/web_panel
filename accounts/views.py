@@ -399,24 +399,6 @@ def sync_profile_sub_id(request, profile_id):
     return redirect('manage_user', user_id=profile.user.id)
 
 
-# ---------- API-опрос донатов (защищённый эндпоинт) ----------
-import traceback
-
-@csrf_exempt
-def fetch_donations_api(request):
-    token = request.GET.get('token', '')
-    if token != settings.CRON_SECRET:
-        return HttpResponse('Invalid token', status=403)
-
-    try:
-        from .management.commands.fetch_donations_donatepay import Command
-        cmd = Command()
-        cmd.handle()
-    except Exception as e:
-        return HttpResponse(f'Error: {traceback.format_exc()}', status=500, content_type='text/plain')
-
-    return HttpResponse('OK')
-
 def faq(request):
     return render(request, 'faq.html')
 
@@ -452,6 +434,8 @@ def admin_settings(request):
         settings_obj.default_days = int(request.POST.get('default_days', 30))
         settings_obj.default_traffic_gb = int(request.POST.get('default_traffic_gb', 0))
         settings_obj.footer_text = request.POST.get('footer_text', '').strip()
+        settings_obj.payment_qr = request.POST.get('payment_qr', '').strip()
+        settings_obj.payment_link = request.POST.get('payment_link', '').strip()
         settings_obj.save()
         return redirect('admin_settings')
 
@@ -492,3 +476,78 @@ def notification_toggle(request, notification_id):
         messages.success(request, f'Уведомление {status}.')
         return redirect('notifications_list')
     return HttpResponse(status=405)
+
+@login_required
+def payment_page(request):
+    user = request.user
+    profile = user.profiles.first()
+    if not profile:
+        return HttpResponse('Сначала создайте хотя бы один VPN‑профиль', status=400)
+
+    # Генерируем код активации, если его ещё нет
+    if not profile.activation_code:
+        import secrets
+        code = f"VSH-{user.username[:4].upper()}-{secrets.token_hex(4)}"
+        while Profile.objects.filter(activation_code=code).exists():
+            code = f"VSH-{user.username[:4].upper()}-{secrets.token_hex(4)}"
+        profile.activation_code = code
+        profile.save()
+
+    admin_settings = AdminSettings.load()
+
+    # Последние 10 заявок пользователя
+    tickets = PaymentTicket.objects.filter(user=user).order_by('-created_at')[:10]
+
+    context = {
+        'profile': profile,
+        'admin_settings': admin_settings,
+        'tickets': tickets,
+    }
+    return render(request, 'payment.html', context)
+
+@login_required
+def submit_payment(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    user = request.user
+    profile = user.profiles.first()
+    if not profile:
+        messages.error(request, 'Сначала создайте VPN‑профиль.')
+        return redirect('payment_page')
+
+    screenshot = request.FILES.get('screenshot')
+    if not screenshot:
+        messages.error(request, 'Прикрепите скриншот оплаты.')
+        return redirect('payment_page')
+
+    ticket = PaymentTicket.objects.create(
+        user=user,
+        activation_code=profile.activation_code,
+        screenshot=screenshot
+    )
+    messages.success(request, 'Заявка на продление отправлена. Администратор проверит её в ближайшее время.')
+    return redirect('payment_page')
+
+@staff_member_required
+def admin_payments(request):
+    tickets = PaymentTicket.objects.select_related('user').order_by('-created_at')
+    return render(request, 'admin_payments.html', {'tickets': tickets})
+
+@staff_member_required
+def approve_payment(request, ticket_id):
+    ticket = get_object_or_404(PaymentTicket, pk=ticket_id)
+    if request.method == 'POST':
+        user = ticket.user
+        days = 30   # или брать из настроек
+        for profile in user.profiles.all():
+            if profile.is_subscription_active():
+                profile.subscription_expiry += timedelta(days=days)
+            else:
+                profile.subscription_expiry = timezone.now() + timedelta(days=days)
+            profile.save()
+        ticket.is_approved = True
+        ticket.save()
+        messages.success(request, f'Подписка пользователя {user.username} продлена на {days} дней.')
+        return redirect('admin_payments')
+    return render(request, 'confirm_approve.html', {'ticket': ticket})

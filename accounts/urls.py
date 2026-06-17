@@ -28,11 +28,12 @@ urlpatterns = [
     path('admin-settings/', views.admin_settings, name='admin_settings'),
     path('sync-profile-sub-id/<int:profile_id>/', views.sync_profile_sub_id, name='sync_profile_sub_id'),
 
-    # API-опрос донатов (защищённый эндпоинт)
-    path('fetch-donations/', views.fetch_donations_api, name='fetch_donations_api'),
-
     #страница оплаты
     path('payment/', views.payment_page, name='payment_page'),
+    path('payment/', views.payment_page, name='payment_page'),
+    path('submit-payment/', views.submit_payment, name='submit_payment'),
+    path('admin/payments/', views.admin_payments, name='admin_payments'),
+    path('admin/payments/<int:ticket_id>/approve/', views.approve_payment, name='approve_payment'),
 
     #уведомления
     path('notifications/', views.notifications_list, name='notifications_list'),

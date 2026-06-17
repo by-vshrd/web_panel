@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta name="apay-tag" content="4QZR3OQK4DCU7DMV5WUGCYTBMBQ45YJC">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}VPN Сервис{% endblock %}</title>
@@ -184,9 +183,7 @@
         }
 
         /* Уведомления */
-        #global-notifications {
-            z-index: 5;
-        }
+        #global-notifications { z-index: 5; }
         .global-notif {
             padding: 0.8rem 1.5rem;
             display: flex;
@@ -208,15 +205,9 @@
 
         /* ===== Адаптивность ===== */
         @media (max-width: 600px) {
-            .navbar {
-                padding: 0 1rem;
-            }
-            .navbar nav {
-                display: none;                     /* обычное меню скрыто */
-            }
-            .hamburger {
-                display: flex;                    /* показываем кнопку */
-            }
+            .navbar { padding: 0 1rem; }
+            .navbar nav { display: none; }
+            .hamburger { display: flex; }
             .navbar.open nav {
                 display: flex;
                 flex-direction: column;
@@ -230,36 +221,21 @@
                 gap: 0.8rem;
                 z-index: 20;
             }
-            .container {
-                padding: 0 1rem;
-                margin: 1rem auto;
-            }
-            .card {
-                padding: 1rem;
-            }
-            h2, h1 {
-                font-size: 1.2rem;
-            }
-            .stat {
-                font-size: 1.5rem;
-            }
-            .btn {
-                padding: 0.5rem 1rem;
-                font-size: 0.85rem;
-            }
+            .container { padding: 0 1rem; margin: 1rem auto; }
+            .card { padding: 1rem; }
+            h2, h1 { font-size: 1.2rem; }
+            .stat { font-size: 1.5rem; }
+            .btn { padding: 0.5rem 1rem; font-size: 0.85rem; }
             .responsive-table {
                 overflow-x: auto;
                 display: block;
                 white-space: nowrap;
             }
-            .navbar-status {
-                margin-left: 0;
-            }
+            .navbar-status { margin-left: 0; }
         }
     </style>
 </head>
 <body>
-    <!-- Глобальные уведомления -->
     {% if active_notifications %}
     <div id="global-notifications">
         {% for notif in active_notifications %}
@@ -273,17 +249,18 @@
 
     <div class="navbar" id="navbar">
         <a href="/" class="logo">🔒 VPN</a>
-        <!-- Гамбургер (виден на мобильных) -->
         <button class="hamburger" id="hamburger-btn" aria-label="Меню">
             <span></span><span></span><span></span>
         </button>
         <nav class="nav-menu">
             {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}">Кабинет</a>
+                <a href="{% url 'payment_page' %}">Оплата</a>
                 {% if user.is_staff %}
                     <a href="{% url 'admin_dashboard' %}">Админка</a>
                     <a href="{% url 'admin_settings' %}">Настройки</a>
                     <a href="{% url 'notifications_list' %}">Уведомления</a>
+                    <a href="{% url 'admin_payments' %}">Заявки на оплату</a>
                     <a href="https://78.17.4.72:32894/login/panel/" target="_blank">3X-UI</a>
                 {% endif %}
                 <a href="{% url 'faq' %}">FAQ</a>
@@ -313,21 +290,15 @@
     </div>
 
     <script>
-        // Мобильное меню
         const hamburger = document.getElementById('hamburger-btn');
         const navbar = document.getElementById('navbar');
         hamburger.addEventListener('click', function() {
             navbar.classList.toggle('open');
         });
-
-        // Закрывать меню при клике на ссылку (на мобильных)
         document.querySelectorAll('.nav-menu a').forEach(link => {
-            link.addEventListener('click', () => {
-                navbar.classList.remove('open');
-            });
+            link.addEventListener('click', () => { navbar.classList.remove('open'); });
         });
 
-        // Статус сервера
         async function updateServerStatus() {
             const dot = document.getElementById('status-dot');
             const text = document.getElementById('status-text');
@@ -349,7 +320,6 @@
         setInterval(updateServerStatus, 30000);
         updateServerStatus();
 
-        // Закрытие уведомлений
         document.querySelectorAll('.close-notif').forEach(btn => {
             btn.addEventListener('click', function() {
                 const notifId = this.getAttribute('data-notif-id');
@@ -366,9 +336,7 @@
             let closed = JSON.parse(localStorage.getItem('closed_notifications') || '[]');
             document.querySelectorAll('.global-notif').forEach(div => {
                 const id = div.getAttribute('data-notif-id');
-                if (closed.includes(id)) {
-                    div.style.display = 'none';
-                }
+                if (closed.includes(id)) { div.style.display = 'none'; }
             });
         })();
     </script>

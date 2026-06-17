@@ -1,90 +1,48 @@
-{% extends 'base.html' %}
-{% block title %}Пополнение подписки{% endblock %}
+{{% extends 'base.html' %}
+{% block title %}Оплата подписки{% endblock %}
 {% block content %}
-<h2 style="color: var(--text-heading); margin-bottom: 1rem;">Пополнение подписки</h2>
+<h2 style="color: var(--text-heading); margin-bottom: 1rem;">Оплата подписки</h2>
 
+{% if admin_settings.payment_qr or admin_settings.payment_link %}
 <div class="card" style="text-align: center;">
-    <h3>Ваш код активации</h3>
-    <div style="font-size: 1.8rem; font-family: monospace; margin: 1rem 0; word-break: break-all;" id="activation-code">
-        {{ profile.activation_code }}
+    <h3>Инструкция по оплате</h3>
+    {% if admin_settings.payment_qr %}
+    <div style="margin: 1rem 0;">
+        <p style="color: var(--muted);">Отсканируйте QR‑код:</p>
+        <img src="{{ admin_settings.payment_qr }}" alt="QR‑код оплаты" style="max-width: 250px; border-radius: 8px;">
     </div>
-    <p style="color: var(--muted); margin-bottom: 1rem;">
-        Совершите донат через DonatePay и укажите этот код в комментарии к платежу.
-    </p>
-    <a href="https://donatepay.ru/don/1505821" target="_blank" class="btn">Перейти к донату</a>
-</div>
-
-<div class="card">
-    <h3>История транзакций</h3>
-    {% if transactions %}
-    <div class="responsive-table">
-        <table style="width:100%; border-collapse: collapse;">
-            <thead>
-                <tr>
-                    <th style="text-align:left; padding:0.5rem;">ID</th>
-                    <th style="text-align:right; padding:0.5rem;">Сумма</th>
-                    <th style="text-align:center; padding:0.5rem;">Статус</th>
-                    <th style="text-align:right; padding:0.5rem;">Дата</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for tx in transactions %}
-                <tr style="border-bottom: 1px solid var(--border);">
-                    <td style="padding:0.5rem;">{{ tx.donation_id|truncatechars:12 }}</td>
-                    <td style="text-align:right; padding:0.5rem;">{{ tx.amount }} {{ tx.currency }}</td>
-                    <td style="text-align:center; padding:0.5rem;">
-                        {% if tx.processed %}
-                            <span style="color: var(--success);">✅ Обработан</span>
-                        {% else %}
-                            <span style="color: var(--danger);">❌ Ожидает</span>
-                        {% endif %}
-                    </td>
-                    <td style="text-align:right; padding:0.5rem;">{{ tx.created_at|date:"d.m.Y H:i" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p style="color: var(--muted);">Транзакций пока нет.</p>
     {% endif %}
+    {% if admin_settings.payment_link %}
+    <a href="{{ admin_settings.payment_link }}" target="_blank" class="btn btn-outline" style="margin: 0.5rem 0;">Перейти к оплате</a>
+    {% endif %}
+    <p style="color: var(--muted); margin-top: 1rem;">
+        <strong>Важно:</strong> в комментарии к платежу укажите ваш код активации:
+    </p>
+    <div style="font-size: 1.8rem; font-family: monospace; margin: 0.5rem 0;">{{ profile.activation_code }}</div>
 </div>
+{% else %}
+<div class="card" style="text-align: center;">
+    <p style="color: var(--muted);">Способы оплаты временно недоступны. Обратитесь к администратору.</p>
+</div>
+{% endif %}
 
-<style>
-    /* Дополнительные стили для мобильной адаптации */
-    @media (max-width: 600px) {
-        .card {
-            padding: 1rem;
-        }
-        h2, h3 {
-            font-size: 1.2rem;
-        }
-        #activation-code {
-            font-size: 1.4rem;
-        }
-        .btn {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-        }
-        .responsive-table {
-            overflow-x: auto;
-            display: block;
-            white-space: nowrap;
-            -webkit-overflow-scrolling: touch;
-        }
-        table {
-            min-width: 500px; /* Минимальная ширина для читаемости */
-        }
-        th, td {
-            padding: 0.4rem;
-        }
-    }
-</style>
+{% if admin_settings.payment_qr or admin_settings.payment_link %}
+<div class="card">
+    <h3>Подтверждение оплаты</h3>
+    <form method="post" action="{% url 'submit_payment' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label>Загрузите скриншот оплаты:</label>
+        <input type="file" name="screenshot" accept="image/*" required id="screenshot-input">
+        <button type="submit" class="btn" id="submit-btn" disabled>Я оплатил</button>
+    </form>
+</div>
+{% endif %}
 
 <script>
-    // Автообновление каждые 10 секунд для отслеживания новых платежей
-    setTimeout(function() {
-        location.reload();
-    }, 10000);
+    const fileInput = document.getElementById('screenshot-input');
+    const submitBtn = document.getElementById('submit-btn');
+    fileInput.addEventListener('change', function() {
+        submitBtn.disabled = !this.files.length;
+    });
 </script>
 {% endblock %}

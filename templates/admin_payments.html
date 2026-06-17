@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Заявки на оплату{% endblock %}
+{% block content %}
+<h2>Заявки на продление подписки</h2>
+
+{% for ticket in tickets %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <strong>{{ ticket.user.username }}</strong> ({{ ticket.user.email }})<br>
+            Код активации: {{ ticket.activation_code }}<br>
+            Дата: {{ ticket.created_at|date:"d.m.Y H:i" }}
+        </div>
+        <div>
+            <img src="{{ ticket.screenshot.url }}" alt="Скриншот оплаты" style="max-width: 200px; border-radius: 8px; margin-bottom: 0.5rem;">
+            {% if not ticket.is_approved %}
+            <form method="post" action="{% url 'approve_payment' ticket.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn">Подтвердить оплату</button>
+            </form>
+            {% else %}
+            <span style="color: var(--success); font-weight: bold;">✅ Подтверждено</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% empty %}
+<p>Заявок пока нет.</p>
+{% endfor %}
+{% endblock %}

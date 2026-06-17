@@ -44,6 +44,8 @@ class AdminSettings(models.Model):
         default='BETA-build v0.2 by V.',
         verbose_name='Текст в футере'
     )
+    payment_qr = models.TextField(blank=True, verbose_name='QR‑код оплаты (ссылка на изображение)')
+    payment_link = models.URLField(blank=True, verbose_name='Ссылка для оплаты')
 
     def save(self, *args, **kwargs):
         self.pk = 1
@@ -84,3 +86,14 @@ class Notification(models.Model):
 
     def __str__(self):
         return f'{self.get_level_display()}: {self.text[:50]}'
+
+
+class PaymentTicket(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    activation_code = models.CharField(max_length=50)
+    screenshot = models.ImageField(upload_to='payment_screenshots/')
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_approved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Заявка от {self.user.username} ({self.created_at.strftime('%d.%m.%Y %H:%M')})"
