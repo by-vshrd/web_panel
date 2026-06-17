@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Подтверждение оплаты{% endblock %}
+{% block content %}
+<h2>Подтвердить оплату для заявки #{{ ticket.id }}?</h2>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background:var(--success);">Подтвердить</button>
+    <a href="{% url 'admin_payments' %}" class="btn btn-outline">Отмена</a>
+</form>
+{% endblock %}

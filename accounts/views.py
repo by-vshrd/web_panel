@@ -28,6 +28,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import Profile, AdminSettings, Donation
 from .models import Profile, AdminSettings, Notification, PaymentTicket
+from datetime import timedelta
+from django.utils import timezone
+from .api import XUIClient
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -541,15 +544,47 @@ def approve_payment(request, ticket_id):
     ticket = get_object_or_404(PaymentTicket, pk=ticket_id)
     if request.method == 'POST':
         user = ticket.user
-        days = 30   # или брать из настроек
+        days = 30
+        xui = None
+        try:
+            xui = XUIClient()
+        except Exception as e:
+            messages.error(request, f'Не удалось подключиться к панели 3X‑UI: {e}')
+            return redirect('admin_payments')
+
+        success = True
         for profile in user.profiles.all():
-            if profile.is_subscription_active():
-                profile.subscription_expiry += timedelta(days=days)
+            old = profile.subscription_expiry
+            if old is None or old < timezone.now():
+                new_expiry = timezone.now() + timedelta(days=days)
             else:
-                profile.subscription_expiry = timezone.now() + timedelta(days=days)
+                new_expiry = old + timedelta(days=days)
+
+            # Локальное сохранение
+            profile.subscription_expiry = new_expiry
             profile.save()
-        ticket.is_approved = True
-        ticket.save()
-        messages.success(request, f'Подписка пользователя {user.username} продлена на {days} дней.')
+
+            # Синхронизация с панелью
+            try:
+                xui.update_client(
+                    email=profile.vpn_email,
+                    sub_id=profile.vpn_sub_id,
+                    uuid=str(profile.vpn_uuid),
+                    expiry_time=new_expiry,
+                    enable=True,
+                    total_gb=profile.total_gb
+                )
+            except Exception as e:
+                messages.error(request, f'Ошибка синхронизации профиля {profile.get_protocol_display()}: {e}')
+                success = False
+
+        if success:
+            ticket.is_approved = True
+            ticket.save()
+            messages.success(request, f'Подписка пользователя {user.username} продлена на {days} дней (панель обновлена).')
+        else:
+            messages.warning(request, 'Подписка продлена локально, но возникли ошибки синхронизации с панелью. Проверьте логи.')
+
         return redirect('admin_payments')
+
     return render(request, 'confirm_approve.html', {'ticket': ticket})
