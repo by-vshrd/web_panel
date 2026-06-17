@@ -58,10 +58,22 @@
         .navbar nav a:hover { color: var(--accent); }
 
         /* Гамбургер (скрыт на десктопе) */
-        .hamburger { display: none; flex-direction: column; cursor: pointer; gap: 5px; }
-        .hamburger span { width: 25px; height: 3px; background: var(--text); border-radius: 2px; transition: 0.3s; }
-        #menu-toggle { display: none; }
-        #menu-toggle:checked + .hamburger + .nav-menu { display: flex; }
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            gap: 5px;
+            background: none;
+            border: none;
+            padding: 0.5rem;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: var(--text);
+            border-radius: 2px;
+            transition: 0.3s;
+        }
 
         .btn {
             display: inline-block;
@@ -204,7 +216,7 @@
             .hamburger {
                 display: flex;                    /* показываем кнопку */
             }
-            #menu-toggle:checked + .hamburger + .nav-menu {
+            .navbar.open nav {
                 display: flex;
                 flex-direction: column;
                 position: absolute;
@@ -258,13 +270,12 @@
     </div>
     {% endif %}
 
-    <div class="navbar">
+    <div class="navbar" id="navbar">
         <a href="/" class="logo">🔒 VPN</a>
         <!-- Гамбургер (виден на мобильных) -->
-        <label class="hamburger" for="menu-toggle">
+        <button class="hamburger" id="hamburger-btn" aria-label="Меню">
             <span></span><span></span><span></span>
-        </label>
-        <input type="checkbox" id="menu-toggle">
+        </button>
         <nav class="nav-menu">
             {% if user.is_authenticated %}
                 <a href="{% url 'dashboard' %}">Кабинет</a>
@@ -301,6 +312,21 @@
     </div>
 
     <script>
+        // Мобильное меню
+        const hamburger = document.getElementById('hamburger-btn');
+        const navbar = document.getElementById('navbar');
+        hamburger.addEventListener('click', function() {
+            navbar.classList.toggle('open');
+        });
+
+        // Закрывать меню при клике на ссылку (на мобильных)
+        document.querySelectorAll('.nav-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                navbar.classList.remove('open');
+            });
+        });
+
+        // Статус сервера
         async function updateServerStatus() {
             const dot = document.getElementById('status-dot');
             const text = document.getElementById('status-text');
