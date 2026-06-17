@@ -6,30 +6,32 @@
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <div style="position: relative;">
-            <label for="id_password1">Пароль:</label>
-            <input type="password" name="password1" id="id_password1" style="width: 100%; padding-right: 2.5rem;" required>
-            <span onclick="togglePassword('id_password1', this)" style="position: absolute; right: 8px; top: 38px; cursor: pointer; user-select: none;">👁️</span>
-        </div>
-        <div style="position: relative;">
-            <label for="id_password2">Подтверждение пароля:</label>
-            <input type="password" name="password2" id="id_password2" style="width: 100%; padding-right: 2.5rem;" required>
-            <span onclick="togglePassword('id_password2', this)" style="position: absolute; right: 8px; top: 38px; cursor: pointer; user-select: none;">👁️</span>
-        </div>
         <button type="submit" class="btn" style="margin-top: 0.5rem; width:100%;">Зарегистрироваться</button>
     </form>
 </div>
 
 <script>
-function togglePassword(fieldId, icon) {
-    const field = document.getElementById(fieldId);
-    if (field.type === 'password') {
-        field.type = 'text';
-        icon.textContent = '🙈';
-    } else {
-        field.type = 'password';
+(function() {
+    document.querySelectorAll('input[type="password"]').forEach(input => {
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'relative';
+        input.parentNode.insertBefore(wrapper, input);
+        wrapper.appendChild(input);
+
+        const icon = document.createElement('span');
         icon.textContent = '👁️';
-    }
-}
+        icon.style.cssText = 'position:absolute; right:8px; top:8px; cursor:pointer; user-select:none;';
+        icon.onclick = function() {
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                icon.textContent = '👁️';
+            }
+        };
+        wrapper.appendChild(icon);
+    });
+})();
 </script>
 {% endblock %}
