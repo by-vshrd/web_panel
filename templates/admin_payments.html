@@ -5,14 +5,18 @@
 
 {% for ticket in tickets %}
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
         <div>
             <strong>{{ ticket.user.username }}</strong> ({{ ticket.user.email }})<br>
             Код активации: {{ ticket.activation_code }}<br>
             Дата: {{ ticket.created_at|date:"d.m.Y H:i" }}
         </div>
         <div>
-            <img src="{{ ticket.screenshot.url }}" alt="Скриншот оплаты" style="max-width: 200px; border-radius: 8px; margin-bottom: 0.5rem;">
+            {% if ticket.screenshot %}
+                <img src="{{ ticket.screenshot.url }}" alt="Скриншот оплаты" style="max-width: 200px; border-radius: 8px; margin-bottom: 0.5rem;">
+            {% else %}
+                <p style="color: var(--muted);">Скриншот не прикреплён</p>
+            {% endif %}
             {% if not ticket.is_approved %}
             <form method="post" action="{% url 'approve_payment' ticket.id %}">
                 {% csrf_token %}
