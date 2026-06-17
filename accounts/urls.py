@@ -34,6 +34,7 @@ urlpatterns = [
     path('submit-payment/', views.submit_payment, name='submit_payment'),
     path('admin/payments/', views.admin_payments, name='admin_payments'),
     path('admin/payments/<int:ticket_id>/approve/', views.approve_payment, name='approve_payment'),
+    path('admin/payments/<int:ticket_id>/reject/', views.reject_payment, name='reject_payment'),
 
     #уведомления
     path('notifications/', views.notifications_list, name='notifications_list'),

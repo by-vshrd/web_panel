@@ -9,21 +9,31 @@
         <div>
             <strong>{{ ticket.user.username }}</strong> ({{ ticket.user.email }})<br>
             Код активации: {{ ticket.activation_code }}<br>
-            Дата: {{ ticket.created_at|date:"d.m.Y H:i" }}
+            Дата: {{ ticket.created_at|date:"d.m.Y H:i" }}<br>
+            Статус: <span style="color: {% if ticket.status == 'approved' %}var(--success){% elif ticket.status == 'rejected' %}var(--danger){% else %}var(--muted){% endif %};">
+                {{ ticket.get_status_display }}
+            </span>
+            {% if ticket.status == 'rejected' and ticket.rejection_reason %}
+                <br><small>Причина: {{ ticket.rejection_reason }}</small>
+            {% endif %}
         </div>
         <div>
             {% if ticket.screenshot %}
-                <img src="{{ ticket.screenshot.url }}" alt="Скриншот оплаты" style="max-width: 200px; border-radius: 8px; margin-bottom: 0.5rem;">
+                <a href="{{ ticket.screenshot.url }}" target="_blank">
+                    <img src="{{ ticket.screenshot.url }}" alt="Скриншот" style="max-width: 200px; border-radius: 8px; margin-bottom: 0.5rem;">
+                </a><br>
+                <small><a href="{{ ticket.screenshot.url }}" target="_blank">Открыть в полном размере</a></small>
             {% else %}
                 <p style="color: var(--muted);">Скриншот не прикреплён</p>
             {% endif %}
-            {% if not ticket.is_approved %}
-            <form method="post" action="{% url 'approve_payment' ticket.id %}">
-                {% csrf_token %}
-                <button type="submit" class="btn">Подтвердить оплату</button>
-            </form>
-            {% else %}
-            <span style="color: var(--success); font-weight: bold;">✅ Подтверждено</span>
+            {% if ticket.status == 'pending' %}
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <form method="post" action="{% url 'approve_payment' ticket.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn" style="background:var(--success);">Подтвердить</button>
+                </form>
+                <a href="{% url 'reject_payment' ticket.id %}" class="btn btn-outline" style="color:var(--danger);">Отменить</a>
+            </div>
             {% endif %}
         </div>
     </div>

@@ -89,11 +89,14 @@ class Notification(models.Model):
 
 
 class PaymentTicket(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Ожидает'),
+        ('approved', 'Подтверждена'),
+        ('rejected', 'Отклонена'),
+    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     activation_code = models.CharField(max_length=50)
-    screenshot = models.ImageField(upload_to='payment_screenshots/')
+    screenshot = models.ImageField(upload_to='payment_screenshots/', blank=True, null=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    rejection_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_approved = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"Заявка от {self.user.username} ({self.created_at.strftime('%d.%m.%Y %H:%M')})"

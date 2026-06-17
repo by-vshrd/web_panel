@@ -490,7 +490,6 @@ def payment_page(request):
     if not profile:
         return HttpResponse('Сначала создайте хотя бы один VPN‑профиль', status=400)
 
-    # Генерируем код активации, если его ещё нет
     if not profile.activation_code:
         import secrets
         code = f"VSH-{user.username[:4].upper()}-{secrets.token_hex(4)}"
@@ -500,9 +499,7 @@ def payment_page(request):
         profile.save()
 
     admin_settings = AdminSettings.load()
-
-    # Последние 10 заявок пользователя
-    tickets = PaymentTicket.objects.filter(user=user).order_by('-created_at')[:10]
+    tickets = PaymentTicket.objects.filter(user=user).order_by('-created_at')[:20]
 
     context = {
         'profile': profile,
@@ -560,12 +557,8 @@ def approve_payment(request, ticket_id):
                 new_expiry = timezone.now() + timedelta(days=days)
             else:
                 new_expiry = old + timedelta(days=days)
-
-            # Локальное сохранение
             profile.subscription_expiry = new_expiry
             profile.save()
-
-            # Синхронизация с панелью
             try:
                 xui.update_client(
                     email=profile.vpn_email,
@@ -576,21 +569,31 @@ def approve_payment(request, ticket_id):
                     total_gb=profile.total_gb
                 )
             except Exception as e:
-                messages.error(request, f'Ошибка синхронизации профиля {profile.get_protocol_display()}: {e}')
+                messages.error(request, f'Ошибка синхронизации {profile.get_protocol_display()}: {e}')
                 success = False
 
         if success:
-            ticket.is_approved = True
-            ticket.save()
-            messages.success(request, f'Подписка пользователя {user.username} продлена на {days} дней (панель обновлена).')
-            # Удаляем файл скриншота
             if ticket.screenshot:
                 ticket.screenshot.delete(save=False)
-            ticket.is_approved = True
+            ticket.status = 'approved'
             ticket.save()
+            messages.success(request, f'Подписка пользователя {user.username} продлена на {days} дней.')
         else:
-            messages.warning(request, 'Подписка продлена локально, но возникли ошибки синхронизации с панелью. Проверьте логи.')
-
+            messages.warning(request, 'Подписка продлена локально, но были ошибки синхронизации с панелью.')
         return redirect('admin_payments')
-
     return render(request, 'confirm_approve.html', {'ticket': ticket})
+
+@staff_member_required
+def reject_payment(request, ticket_id):
+    ticket = get_object_or_404(PaymentTicket, pk=ticket_id)
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+        if not reason:
+            messages.error(request, 'Укажите причину отклонения.')
+            return redirect('admin_payments')
+        ticket.status = 'rejected'
+        ticket.rejection_reason = reason
+        ticket.save()
+        messages.success(request, f'Заявка #{ticket.id} отклонена.')
+        return redirect('admin_payments')
+    return render(request, 'reject_payment.html', {'ticket': ticket})

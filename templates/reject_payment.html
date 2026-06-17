@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Отклонение заявки{% endblock %}
+{% block content %}
+<h2>Отклонить заявку #{{ ticket.id }}</h2>
+<div class="card">
+    <p><strong>Пользователь:</strong> {{ ticket.user.username }}</p>
+    <form method="post">
+        {% csrf_token %}
+        <label>Причина отклонения:</label>
+        <textarea name="reason" rows="3" required style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:0.8rem; color:var(--text);"></textarea>
+        <button type="submit" class="btn" style="background:var(--danger); margin-top:0.5rem;">Отклонить</button>
+        <a href="{% url 'admin_payments' %}" class="btn btn-outline">Отмена</a>
+    </form>
+</div>
+{% endblock %}

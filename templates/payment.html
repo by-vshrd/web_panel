@@ -6,6 +6,45 @@
 {% if admin_settings.payment_qr or admin_settings.payment_link %}
 <div class="card" style="text-align: center;">
     <h3>Инструкция по оплате</h3>
+    <div class="card">
+    <h3>История заявок</h3>
+    {% if tickets %}
+    <div class="responsive-table">
+        <table style="width:100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align:left; padding:0.5rem;">Дата</th>
+                    <th style="text-align:center; padding:0.5rem;">Статус</th>
+                    <th style="text-align:right; padding:0.5rem;">Причина (если отклонена)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tickets %}
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding:0.5rem;">{{ t.created_at|date:"d.m.Y H:i" }}</td>
+                    <td style="text-align:center; padding:0.5rem;">
+                        {% if t.status == 'approved' %}
+                            <span style="color: var(--success);">✅ Подтверждена</span>
+                        {% elif t.status == 'rejected' %}
+                            <span style="color: var(--danger);">❌ Отклонена</span>
+                        {% else %}
+                            <span style="color: var(--muted);">⏳ Ожидает</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right; padding:0.5rem;">
+                        {% if t.status == 'rejected' and t.rejection_reason %}
+                            {{ t.rejection_reason }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="color: var(--muted);">Заявок пока нет.</p>
+    {% endif %}
+</div>
     {% if admin_settings.payment_qr %}
     <div style="margin: 1rem 0;">
         <p style="color: var(--muted);">Отсканируйте QR‑код:</p>
