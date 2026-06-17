@@ -65,7 +65,7 @@
 
     <div style="text-align: center; margin-top: 1rem;">
     <a href="{% url 'qr_code' profile.id %}" class="btn" style="margin-right: 0.5rem;">📱 QR‑код</a>
-    <a href="{% url 'subscription_link' profile.id %}" class="btn btn-outline" target="_blank">🔗 Ссылка</a>
+    <button class="btn btn-outline" onclick="copySubscriptionLink({{ profile.id }}, this)">🔗 Ссылка</button>
 </div>
 </div>
 {% empty %}
@@ -81,5 +81,24 @@
     <a href="{% url 'payment_page' %}" class="btn">💳 Пополнить подписку</a>
 </div>
 {% endif %}
-
+<script>
+async function copySubscriptionLink(profileId, btn) {
+    try {
+        const response = await fetch(`/accounts/link/${profileId}/`);
+        if (!response.ok) throw new Error('Ошибка');
+        const link = await response.text();
+        await navigator.clipboard.writeText(link);
+        // Визуальная обратная связь
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Скопировано!';
+        btn.disabled = true;
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }, 2000);
+    } catch (err) {
+        alert('Не удалось скопировать ссылку. Попробуйте позже.');
+    }
+}
+</script>
 {% endblock %}

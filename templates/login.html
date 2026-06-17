@@ -6,7 +6,25 @@
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
+        <div style="position: relative;">
+            <label for="id_password">Пароль:</label>
+            <input type="password" name="password" id="id_password" style="width: 100%; padding-right: 2.5rem;" required>
+            <span onclick="togglePassword('id_password', this)" style="position: absolute; right: 8px; top: 38px; cursor: pointer; user-select: none;">👁️</span>
+        </div>
         <button type="submit" class="btn" style="margin-top: 0.5rem; width:100%;">Войти</button>
     </form>
 </div>
+
+<script>
+function togglePassword(fieldId, icon) {
+    const field = document.getElementById(fieldId);
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.textContent = '🙈';
+    } else {
+        field.type = 'password';
+        icon.textContent = '👁️';
+    }
+}
+</script>
 {% endblock %}
