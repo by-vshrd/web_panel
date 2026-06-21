@@ -46,6 +46,7 @@ class AdminSettings(models.Model):
     )
     payment_qr = models.ImageField(upload_to='payment_qr/', blank=True, verbose_name='QR‑код оплаты')
     payment_link = models.URLField(blank=True, verbose_name='Ссылка для оплаты')
+    bank_details = models.TextField(blank=True, verbose_name='Реквизиты для перевода')
 
     def save(self, *args, **kwargs):
         self.pk = 1

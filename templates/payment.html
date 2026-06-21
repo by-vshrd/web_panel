@@ -5,10 +5,57 @@
 
 {% if admin_settings.payment_qr or admin_settings.payment_link %}
 <div class="card" style="text-align: center;">
-    <h3>Инструкция по оплате</h3>
-    <div class="card">
+    <h3>Оплата через Т‑Банк</h3>
+    {% if admin_settings.payment_qr %}
+    <div style="margin: 1rem 0;">
+        <p style="color: var(--muted);">Отсканируйте QR‑код в приложении Т‑Банка:</p>
+        <img src="{{ admin_settings.payment_qr.url }}" alt="QR‑код оплаты" style="max-width: 250px; border-radius: 8px;">
+    </div>
+    {% endif %}
+    {% if admin_settings.payment_link %}
+    <a href="{{ admin_settings.payment_link }}" target="_blank" class="btn btn-outline" style="margin: 0.5rem 0;">Перейти к оплате</a>
+    <p style="color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem;">Ссылка для клиентов Т‑Банка</p>
+    {% endif %}
+    <p style="color: var(--muted); margin-top: 1rem;">
+        <strong>Важно:</strong> в комментарии к платежу укажите ваш код активации:
+    </p>
+    <div style="font-size: 1.8rem; font-family: monospace; margin: 0.5rem 0;">{{ profile.activation_code }}</div>
+</div>
+{% endif %}
+
+{% if admin_settings.bank_details %}
+<div class="card">
+    <h3>Оплата по реквизитам</h3>
+    <div style="white-space: pre-wrap; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; font-size: 0.95rem; color: var(--text);">
+        {{ admin_settings.bank_details|linebreaks }}
+    </div>
+    <p style="color: var(--muted); margin-top: 1rem;">
+        <strong>Назначение платежа:</strong> укажите ваш код активации <strong>{{ profile.activation_code }}</strong>
+    </p>
+</div>
+{% endif %}
+
+{% if not admin_settings.payment_qr and not admin_settings.payment_link and not admin_settings.bank_details %}
+<div class="card" style="text-align: center;">
+    <p style="color: var(--muted);">Способы оплаты временно недоступны. Обратитесь к администратору.</p>
+</div>
+{% endif %}
+
+{% if admin_settings.payment_qr or admin_settings.payment_link or admin_settings.bank_details %}
+<div class="card">
+    <h3>Подтверждение оплаты</h3>
+    <form method="post" action="{% url 'submit_payment' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label>Загрузите скриншот оплаты:</label>
+        <input type="file" name="screenshot" accept="image/*" required id="screenshot-input">
+        <button type="submit" class="btn" id="submit-btn" disabled>Я оплатил</button>
+    </form>
+</div>
+{% endif %}
+
+{% if tickets %}
+<div class="card">
     <h3>История заявок</h3>
-    {% if tickets %}
     <div class="responsive-table">
         <table style="width:100%; border-collapse: collapse;">
             <thead>
@@ -41,39 +88,6 @@
             </tbody>
         </table>
     </div>
-    {% else %}
-    <p style="color: var(--muted);">Заявок пока нет.</p>
-    {% endif %}
-</div>
-    {% if admin_settings.payment_qr %}
-    <div style="margin: 1rem 0;">
-        <p style="color: var(--muted);">Отсканируйте QR‑код:</p>
-        <img src="{{ admin_settings.payment_qr }}" alt="QR‑код оплаты" style="max-width: 250px; border-radius: 8px;">
-    </div>
-    {% endif %}
-    {% if admin_settings.payment_link %}
-    <a href="{{ admin_settings.payment_link }}" target="_blank" class="btn btn-outline" style="margin: 0.5rem 0;">Перейти к оплате</a>
-    {% endif %}
-    <p style="color: var(--muted); margin-top: 1rem;">
-        <strong>Важно:</strong> в комментарии к платежу укажите ваш код активации:
-    </p>
-    <div style="font-size: 1.8rem; font-family: monospace; margin: 0.5rem 0;">{{ profile.activation_code }}</div>
-</div>
-{% else %}
-<div class="card" style="text-align: center;">
-    <p style="color: var(--muted);">Способы оплаты временно недоступны. Обратитесь к администратору.</p>
-</div>
-{% endif %}
-
-{% if admin_settings.payment_qr or admin_settings.payment_link %}
-<div class="card">
-    <h3>Подтверждение оплаты</h3>
-    <form method="post" action="{% url 'submit_payment' %}" enctype="multipart/form-data">
-        {% csrf_token %}
-        <label>Загрузите скриншот оплаты:</label>
-        <input type="file" name="screenshot" accept="image/*" required id="screenshot-input">
-        <button type="submit" class="btn" id="submit-btn" disabled>Я оплатил</button>
-    </form>
 </div>
 {% endif %}
 

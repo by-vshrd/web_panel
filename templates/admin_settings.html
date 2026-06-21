@@ -23,7 +23,8 @@
         
         <label>Ссылка для оплаты:</label>
         <input type="url" name="payment_link" value="{{ settings.payment_link }}">
-
+<label>Реквизиты для перевода:</label>
+<textarea name="bank_details" rows="5" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:0.8rem; color:var(--text);">{{ settings.bank_details }}</textarea>
         <button type="submit" class="btn">Сохранить</button>
     </form>
 </div>

@@ -439,6 +439,7 @@ def admin_settings(request):
         settings_obj.default_days = int(request.POST.get('default_days', 30))
         settings_obj.default_traffic_gb = int(request.POST.get('default_traffic_gb', 0))
         settings_obj.footer_text = request.POST.get('footer_text', '').strip()
+        settings_obj.bank_details = request.POST.get('bank_details', '').strip()
         if request.FILES.get('payment_qr'):
             settings_obj.payment_qr = request.FILES['payment_qr']
         settings_obj.payment_link = request.POST.get('payment_link', '').strip()

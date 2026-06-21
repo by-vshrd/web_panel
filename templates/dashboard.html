@@ -6,7 +6,7 @@
 {% if available_protocols %}
 <div class="card" style="text-align: center;">
     <h2>Создать VPN‑подписку</h2>
-    <p style="color: var(--muted); margin-bottom: 1rem;">Вы можете создать по одному профилю каждого протокола.</p>
+    <p style="color: var(--muted); margin-bottom: 1rem;">Вы можете создать по два профиля каждого протокола.</p>
     {% for proto in available_protocols %}
         <form method="post" action="{% url 'create_profile' %}" style="display: inline-block; margin: 0.3rem;">
             {% csrf_token %}
